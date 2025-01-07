@@ -8,6 +8,10 @@ from schemas import UserResponse, LocationResponse, ConsumptionResponse, Spendin
 from passlib.context import CryptContext
 from fastapi.responses import JSONResponse
 import logging
+from fastapi.security import OAuth2PasswordRequestForm
+from auth import authenticate_user, create_access_token, get_current_user
+from datetime import timedelta
+
 
 # ------------------------
 # Initialize FastAPI App
@@ -248,3 +252,31 @@ def add_spending(
     db.commit()
     db.refresh(new_entry)
     return new_entry
+
+# ------------------------
+# Login Routes
+# ------------------------
+
+@app.post("/login")
+def login(
+    form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)
+):
+    user = authenticate_user(db, form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Generate JWT Token
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": str(user.id)}, expires_delta=access_token_expires
+    )
+
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@app.get("/users/me/", response_model=UserResponse)
+def read_users_me(current_user: User = Depends(get_current_user)):
+    return current_user
