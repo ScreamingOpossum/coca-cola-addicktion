@@ -1,63 +1,89 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { registerUser } from "../services/authService";
+import React, { useState, useContext } from 'react';
+import { TextField, Button, Container, Typography, Box, Alert } from '@mui/material';
+import api from '../utils/api';
+import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
 
 const Register = () => {
-  const navigate = useNavigate();
-  const [user, setUser] = useState({
-    first_name: "",
-    last_name: "",
-    email: "",
-    password: "",
+  const [formData, setFormData] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    password: '',
   });
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
+  const { login } = useContext(AuthContext);
+  const navigate = useNavigate();
 
-  const handleRegister = async (e) => {
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+
     try {
-      await registerUser(user);
-      navigate("/"); // Redirect to login
+      const response = await api.post('/register', formData);
+      login(response.data.token, response.data.user);
+      navigate('/dashboard'); // Redirect after registration
     } catch (err) {
-      setError("Failed to register");
+      setError(err.response?.data?.detail || 'Registration failed');
     }
   };
 
   return (
-    <div>
-      <h2>Register</h2>
-      {error && <p style={{ color: "red" }}>{error}</p>}
-      <form onSubmit={handleRegister}>
-        <input
-          type="text"
-          placeholder="First Name"
-          value={user.first_name}
-          onChange={(e) => setUser({ ...user, first_name: e.target.value })}
-          required
-        />
-        <input
-          type="text"
-          placeholder="Last Name"
-          value={user.last_name}
-          onChange={(e) => setUser({ ...user, last_name: e.target.value })}
-          required
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          value={user.email}
-          onChange={(e) => setUser({ ...user, email: e.target.value })}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={user.password}
-          onChange={(e) => setUser({ ...user, password: e.target.value })}
-          required
-        />
-        <button type="submit">Register</button>
-      </form>
-    </div>
+    <Container maxWidth="sm">
+      <Box sx={{ mt: 5 }}>
+        <Typography variant="h4" component="h1" gutterBottom>
+          Register
+        </Typography>
+        {error && <Alert severity="error">{error}</Alert>}
+        <form onSubmit={handleSubmit}>
+          <TextField
+            label="First Name"
+            name="first_name"
+            value={formData.first_name}
+            onChange={handleChange}
+            fullWidth
+            margin="normal"
+            required
+          />
+          <TextField
+            label="Last Name"
+            name="last_name"
+            value={formData.last_name}
+            onChange={handleChange}
+            fullWidth
+            margin="normal"
+            required
+          />
+          <TextField
+            label="Email"
+            name="email"
+            type="email"
+            value={formData.email}
+            onChange={handleChange}
+            fullWidth
+            margin="normal"
+            required
+          />
+          <TextField
+            label="Password"
+            name="password"
+            type="password"
+            value={formData.password}
+            onChange={handleChange}
+            fullWidth
+            margin="normal"
+            required
+          />
+          <Button type="submit" variant="contained" color="primary" fullWidth sx={{ mt: 2 }}>
+            Register
+          </Button>
+        </form>
+      </Box>
+    </Container>
   );
 };
 
