@@ -1,90 +1,112 @@
-import React, { useState, useContext } from 'react';
-import { TextField, Button, Container, Typography, Box, Alert } from '@mui/material';
-import api from '../utils/api';
-import { useNavigate } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import {
+    Container,
+    Box,
+    TextField,
+    Button,
+    Typography,
+    CircularProgress,
+} from "@mui/material";
 
 const Register = () => {
-  const [formData, setFormData] = useState({
-    first_name: '',
-    last_name: '',
-    email: '',
-    password: '',
-  });
-  const [error, setError] = useState('');
-  const { login } = useContext(AuthContext);
-  const navigate = useNavigate();
+    const [loading, setLoading] = useState(false);
+    const [formData, setFormData] = useState({
+        firstName: "",
+        lastName: "",
+        email: "",
+        password: "",
+    });
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            const response = await fetch("http://localhost:8000/auth/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(formData),
+            });
+            setLoading(false);
 
-    try {
-      const response = await api.post('/register', formData);
-      login(response.data.token, response.data.user);
-      navigate('/dashboard'); // Redirect after registration
-    } catch (err) {
-      setError(err.response?.data?.detail || 'Registration failed');
-    }
-  };
+            if (response.ok) {
+                alert("Registration successful!");
+            } else {
+                alert("Failed to register!");
+            }
+        } catch (error) {
+            console.error("Register Error:", error);
+            setLoading(false);
+        }
+    };
 
-  return (
-    <Container maxWidth="sm">
-      <Box sx={{ mt: 5 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          Register
-        </Typography>
-        {error && <Alert severity="error">{error}</Alert>}
-        <form onSubmit={handleSubmit}>
-          <TextField
-            label="First Name"
-            name="first_name"
-            value={formData.first_name}
-            onChange={handleChange}
-            fullWidth
-            margin="normal"
-            required
-          />
-          <TextField
-            label="Last Name"
-            name="last_name"
-            value={formData.last_name}
-            onChange={handleChange}
-            fullWidth
-            margin="normal"
-            required
-          />
-          <TextField
-            label="Email"
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleChange}
-            fullWidth
-            margin="normal"
-            required
-          />
-          <TextField
-            label="Password"
-            name="password"
-            type="password"
-            value={formData.password}
-            onChange={handleChange}
-            fullWidth
-            margin="normal"
-            required
-          />
-          <Button type="submit" variant="contained" color="primary" fullWidth sx={{ mt: 2 }}>
-            Register
-          </Button>
-        </form>
-      </Box>
-    </Container>
-  );
+    return (
+        <Container maxWidth="sm">
+            <Box display="flex" flexDirection="column" alignItems="center" height="100vh">
+                <Typography variant="h4" marginBottom={2}>
+                    Register
+                </Typography>
+                <form onSubmit={handleSubmit} style={{ width: "100%" }}>
+                    <TextField
+                        label="First Name"
+                        name="firstName"
+                        variant="outlined"
+                        fullWidth
+                        margin="normal"
+                        value={formData.firstName}
+                        onChange={handleChange}
+                    />
+                    <TextField
+                        label="Last Name"
+                        name="lastName"
+                        variant="outlined"
+                        fullWidth
+                        margin="normal"
+                        value={formData.lastName}
+                        onChange={handleChange}
+                    />
+                    <TextField
+                        label="Email"
+                        name="email"
+                        variant="outlined"
+                        fullWidth
+                        margin="normal"
+                        value={formData.email}
+                        onChange={handleChange}
+                    />
+                    <TextField
+                        label="Password"
+                        name="password"
+                        type="password"
+                        variant="outlined"
+                        fullWidth
+                        margin="normal"
+                        value={formData.password}
+                        onChange={handleChange}
+                    />
+                    <Button
+                        type="submit"
+                        variant="contained"
+                        color="primary"
+                        fullWidth
+                        disabled={loading}
+                        style={{ marginTop: "16px" }}
+                    >
+                        {loading ? <CircularProgress size={24} /> : "Register"}
+                    </Button>
+                </form>
+                <Box marginTop={2}>
+                    <Typography>
+                        Already have an account? <Link to="/login">Login</Link>
+                    </Typography>
+                </Box>
+            </Box>
+        </Container>
+    );
 };
 
 export default Register;
