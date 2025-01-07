@@ -8,6 +8,10 @@ from database import SessionLocal
 from models import User
 import os
 from dotenv import load_dotenv
+from jose import jwt
+from datetime import datetime, timedelta
+from fastapi import HTTPException
+
 
 # Load environment variables
 load_dotenv()
@@ -73,3 +77,29 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if user is None:
         raise credentials_exception
     return user
+
+from jose import jwt
+from datetime import datetime, timedelta
+from fastapi import HTTPException
+
+# Secret and Algorithm
+SECRET_KEY = "your_secret_key_here"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+REFRESH_TOKEN_EXPIRE_DAYS = 7
+
+# Create Tokens
+def create_tokens(data: dict):
+    to_encode = data.copy()
+
+    # Access Token
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    access_token = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+    # Refresh Token
+    refresh_expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    to_encode.update({"exp": refresh_expire})
+    refresh_token = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+    return {"access_token": access_token, "refresh_token": refresh_token}

@@ -1,7 +1,19 @@
 from pydantic import BaseModel, Field
 from datetime import date
 from typing import Optional
+from pydantic import BaseModel
+from typing import Optional
+from pydantic import BaseModel
 
+
+# Token Schema
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+# TokenData Schema
+class TokenData(BaseModel):
+    email: Optional[str] = None
 
 # User Schema
 class UserBase(BaseModel):

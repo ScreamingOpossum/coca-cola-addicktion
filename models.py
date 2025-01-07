@@ -1,5 +1,6 @@
-from sqlalchemy import Column, Integer, String, Float, Date, TIMESTAMP, func, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, Date, TIMESTAMP, func, ForeignKey, Enum
 from sqlalchemy.orm import relationship, declarative_base
+import enum
 
 # Define Base
 Base = declarative_base()
@@ -7,6 +8,12 @@ Base = declarative_base()
 # ----------------------------
 # Users Table
 # ----------------------------
+
+# User Roles Enum
+class RoleEnum(str, enum.Enum):
+    admin = "admin"
+    user = "user"
+
 class User(Base):
     __tablename__ = "users"
 
@@ -17,6 +24,7 @@ class User(Base):
     password = Column(String, nullable=False)
     date_of_birth = Column(Date, nullable=False)
     monthly_goal = Column(Float, nullable=True)  # Liters
+    role = Column(Enum(RoleEnum), default=RoleEnum.user) # Default role is "user"
 
     # Timestamps
     created_at = Column(TIMESTAMP, server_default=func.now())

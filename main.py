@@ -9,9 +9,19 @@ from passlib.context import CryptContext
 from fastapi.responses import JSONResponse
 import logging
 from fastapi.security import OAuth2PasswordRequestForm
-from auth import authenticate_user, create_access_token, get_current_user
+from auth import authenticate_user, create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES, create_tokens, \
+    SECRET_KEY, ALGORITHM
 from datetime import timedelta
-
+from dependencies import get_current_user, admin_required
+from models import User, RoleEnum
+from fastapi import Depends
+from fastapi import HTTPException, Depends
+from jose import JWTError, jwt
+from dependencies import get_db
+from models import User
+from schemas import Token
+from datetime import datetime, timedelta
+from sqlalchemy.orm import Session
 
 # ------------------------
 # Initialize FastAPI App
@@ -280,3 +290,42 @@ def login(
 @app.get("/users/me/", response_model=UserResponse)
 def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+# Admin-only route
+@app.get("/admin/users")
+def get_all_users(db: Session = Depends(get_db), current_user: User = Depends(admin_required)):
+    users = db.query(User).all()
+    return users
+
+# User-only route
+@app.get("/profile")
+def get_profile(current_user: User = Depends(get_current_user)):
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "role": current_user.role
+    }
+
+# Logout route
+@app.post("/logout")
+def logout():
+    return {"message": "Logout successful. Please discard your token."}
+
+@app.post("/refresh-token")
+def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
+    try:
+        payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+
+        # Generate new tokens
+        new_tokens = create_tokens({"sub": user.email})
+        return new_tokens
+
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
