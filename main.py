@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import FastAPI, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from database import SessionLocal
 from models import User, ConsumptionEntry, SpendingEntry, PurchaseLocation
@@ -6,20 +6,68 @@ from typing import List, Optional
 from datetime import date, datetime
 from schemas import UserResponse, LocationResponse, ConsumptionResponse, SpendingResponse
 from passlib.context import CryptContext
+from fastapi.responses import JSONResponse
+import logging
 
-# Initialize FastAPI app
+# ------------------------
+# Initialize FastAPI App
+# ------------------------
 app = FastAPI()
 
+# ------------------------
+# Logging Setup
+# ------------------------
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# ------------------------
 # Password Hashing
+# ------------------------
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+# ------------------------
 # Database Dependency
+# ------------------------
 def get_db():
     db = SessionLocal()
     try:
         yield db
     finally:
         db.close()
+
+
+# ------------------------
+# Global Error Handling
+# ------------------------
+
+# Handle HTTP Exceptions
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    logger.warning(f"HTTP Exception: {exc.detail}")
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail},
+    )
+
+
+# Handle Validation Errors
+@app.exception_handler(ValueError)
+async def value_error_handler(request: Request, exc: ValueError):
+    logger.error(f"ValueError: {str(exc)}")
+    return JSONResponse(
+        status_code=400,
+        content={"detail": "Invalid input provided."},
+    )
+
+
+# Handle General Exceptions
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unexpected Error: {str(exc)}")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An unexpected error occurred. Please try again later."},
+    )
 
 
 # ------------------------
@@ -178,44 +226,10 @@ def add_consumption(
     return new_entry
 
 
-# Filter Consumption
-@app.get("/consumption/", response_model=List[ConsumptionResponse])
-def get_consumption(
-    start_date: Optional[date] = None,
-    end_date: Optional[date] = None,
-    location_id: Optional[int] = None,
-    min_liters: Optional[float] = None,
-    max_liters: Optional[float] = None,
-    sort_by: Optional[str] = "date",
-    order: Optional[str] = "asc",
-    db: Session = Depends(get_db)
-):
-    query = db.query(ConsumptionEntry)
-
-    # Filters
-    if start_date:
-        query = query.filter(ConsumptionEntry.date >= start_date)
-    if end_date:
-        query = query.filter(ConsumptionEntry.date <= end_date)
-    if location_id:
-        query = query.filter(ConsumptionEntry.location_id == location_id)
-    if min_liters:
-        query = query.filter(ConsumptionEntry.liters_consumed >= min_liters)
-    if max_liters:
-        query = query.filter(ConsumptionEntry.liters_consumed <= max_liters)
-
-    # Sorting
-    field = getattr(ConsumptionEntry, sort_by)
-    query = query.order_by(field.desc() if order == "desc" else field.asc())
-
-    return query.all()
-
-
 # ------------------------
 # Spending Routes
 # ------------------------
 
-# Add Spending
 @app.post("/spending/", status_code=201, response_model=SpendingResponse)
 def add_spending(
     user_id: int,
@@ -234,29 +248,3 @@ def add_spending(
     db.commit()
     db.refresh(new_entry)
     return new_entry
-
-
-# Filter Spending
-@app.get("/spending/", response_model=List[SpendingResponse])
-def get_spending(
-    start_date: Optional[date] = None,
-    end_date: Optional[date] = None,
-    min_amount: Optional[float] = None,
-    max_amount: Optional[float] = None,
-    sort_by: Optional[str] = "date",
-    order: Optional[str] = "asc",
-    db: Session = Depends(get_db)
-):
-    query = db.query(SpendingEntry)
-
-    # Filters
-    if start_date:
-        query = query.filter(SpendingEntry.date >= start_date)
-    if end_date:
-        query = query.filter(SpendingEntry.date <= end_date)
-
-    # Sorting
-    field = getattr(SpendingEntry, sort_by)
-    query = query.order_by(field.desc() if order == "desc" else field.asc())
-
-    return query.all()
