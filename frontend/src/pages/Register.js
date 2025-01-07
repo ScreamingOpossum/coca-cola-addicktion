@@ -1,105 +1,132 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
-    Container,
-    Box,
     TextField,
     Button,
     Typography,
-    CircularProgress,
+    Container,
+    Box,
+    InputAdornment,
+    IconButton,
+    Alert,
 } from "@mui/material";
+import { Visibility, VisibilityOff } from "@mui/icons-material";
 
 const Register = () => {
-    const [loading, setLoading] = useState(false);
-    const [formData, setFormData] = useState({
-        firstName: "",
-        lastName: "",
-        email: "",
-        password: "",
-    });
+    const [firstName, setFirstName] = useState("");
+    const [lastName, setLastName] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false); // Toggle for password visibility
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
+    const navigate = useNavigate();
 
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+    // Toggle password visibility
+    const handleTogglePassword = () => {
+        setShowPassword(!showPassword);
     };
 
+    // Form submission handler
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setLoading(true);
+        setError("");
+        setSuccess("");
+
         try {
             const response = await fetch("http://localhost:8000/auth/register", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
+                body: JSON.stringify({ firstName, lastName, email, password }),
             });
-            setLoading(false);
+
+            const data = await response.json();
 
             if (response.ok) {
-                alert("Registration successful!");
+                setSuccess("Registration successful! Redirecting to login...");
+                setTimeout(() => navigate("/login"), 2000); // Redirect after 2 seconds
             } else {
-                alert("Failed to register!");
+                setError(data.detail || "Registration failed!");
             }
-        } catch (error) {
-            console.error("Register Error:", error);
-            setLoading(false);
+        } catch (err) {
+            setError("Something went wrong. Please try again.");
+            console.error(err);
         }
     };
 
     return (
         <Container maxWidth="sm">
-            <Box display="flex" flexDirection="column" alignItems="center" height="100vh">
-                <Typography variant="h4" marginBottom={2}>
+            <Box
+                sx={{
+                    marginTop: 8,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                }}
+            >
+                <Typography component="h1" variant="h5" gutterBottom>
                     Register
                 </Typography>
-                <form onSubmit={handleSubmit} style={{ width: "100%" }}>
+                {error && <Alert severity="error">{error}</Alert>}
+                {success && <Alert severity="success">{success}</Alert>}
+                <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
                     <TextField
+                        fullWidth
                         label="First Name"
-                        name="firstName"
                         variant="outlined"
-                        fullWidth
                         margin="normal"
-                        value={formData.firstName}
-                        onChange={handleChange}
+                        required
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
                     />
                     <TextField
+                        fullWidth
                         label="Last Name"
-                        name="lastName"
                         variant="outlined"
-                        fullWidth
                         margin="normal"
-                        value={formData.lastName}
-                        onChange={handleChange}
+                        required
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
                     />
                     <TextField
-                        label="Email"
-                        name="email"
-                        variant="outlined"
                         fullWidth
+                        label="Email Address"
+                        variant="outlined"
                         margin="normal"
-                        value={formData.email}
-                        onChange={handleChange}
+                        required
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                     />
                     <TextField
+                        fullWidth
                         label="Password"
-                        name="password"
-                        type="password"
                         variant="outlined"
-                        fullWidth
                         margin="normal"
-                        value={formData.password}
-                        onChange={handleChange}
+                        required
+                        type={showPassword ? "text" : "password"} // Toggle password visibility
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        InputProps={{
+                            endAdornment: (
+                                <InputAdornment position="end">
+                                    <IconButton onClick={handleTogglePassword} edge="end">
+                                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                                    </IconButton>
+                                </InputAdornment>
+                            ),
+                        }}
                     />
                     <Button
                         type="submit"
-                        variant="contained"
-                        color="primary"
                         fullWidth
-                        disabled={loading}
-                        style={{ marginTop: "16px" }}
+                        variant="contained"
+                        sx={{ mt: 2, mb: 2 }}
                     >
-                        {loading ? <CircularProgress size={24} /> : "Register"}
+                        Register
                     </Button>
-                </form>
-                <Box marginTop={2}>
+                </Box>
+                <Box mt={2}>
                     <Typography>
                         Already have an account? <Link to="/login">Login</Link>
                     </Typography>
