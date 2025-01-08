@@ -29,25 +29,40 @@ const Login = () => {
     // Handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError("");
+        setError(""); // Clear previous error
 
         try {
+            // Make API call using form-data format required by FastAPI OAuth2
             const response = await fetch("http://localhost:8000/auth/login", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, password }),
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded", // Required format
+                },
+                body: new URLSearchParams({
+                    username: email, // Must use 'username' instead of 'email'
+                    password: password,
+                }),
             });
 
             const data = await response.json();
 
-            if (response.ok && data.token) {
-                login(data); // Save token in context
+            // Handle response
+            if (response.ok && data.access_token) {
+                login(data); // Save token in AuthContext
                 navigate("/dashboard"); // Redirect to Dashboard
             } else {
-                setError(data.detail || "Invalid email or password!");
+                // Handle structured errors from backend
+                if (Array.isArray(data.detail)) {
+                    const errorMessage = data.detail
+                        .map((err) => err.msg) // Extract error messages
+                        .join(", ");
+                    setError(errorMessage || "Invalid email or password!");
+                } else {
+                    setError(data.detail || "Invalid email or password!");
+                }
             }
         } catch (err) {
-            setError("Login failed. Please try again.");
+            setError("Login failed. Please try again."); // Network or unexpected error
             console.error(err);
         }
     };
@@ -65,8 +80,13 @@ const Login = () => {
                 <Typography component="h1" variant="h5" gutterBottom>
                     Login
                 </Typography>
+
+                {/* Display Errors */}
                 {error && <Alert severity="error">{error}</Alert>}
+
+                {/* Form */}
                 <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
+                    {/* Email Input */}
                     <TextField
                         fullWidth
                         label="Email Address"
@@ -77,6 +97,8 @@ const Login = () => {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                     />
+
+                    {/* Password Input */}
                     <TextField
                         fullWidth
                         label="Password"
@@ -96,6 +118,8 @@ const Login = () => {
                             ),
                         }}
                     />
+
+                    {/* Submit Button */}
                     <Button
                         type="submit"
                         fullWidth
@@ -105,6 +129,8 @@ const Login = () => {
                         Login
                     </Button>
                 </Box>
+
+                {/* Links */}
                 <Box mt={2}>
                     <Typography>
                         Don't have an account? <Link to="/register">Register</Link>

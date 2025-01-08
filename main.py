@@ -1,20 +1,18 @@
 from fastapi import FastAPI, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from database import SessionLocal
-from models import User, ConsumptionEntry, SpendingEntry, PurchaseLocation, RoleEnum
-from typing import List, Optional
-from datetime import date, datetime, timedelta
+from models import User, RoleEnum
+from typing import Optional
+from datetime import date
 from schemas import (
-    UserResponse, LocationResponse, ConsumptionResponse, SpendingResponse,
-    Token, UserCreate
+    UserResponse, Token, UserCreate
 )
 from passlib.context import CryptContext
 from fastapi.responses import JSONResponse
 import logging
 from fastapi.security import OAuth2PasswordRequestForm
-from auth import authenticate_user, create_access_token, get_current_user, create_tokens, SECRET_KEY, ALGORITHM
-from dependencies import admin_required, get_db
-from jose import JWTError, jwt
+from auth import authenticate_user, create_access_token, get_current_user
+from dependencies import get_db
 from fastapi.middleware.cors import CORSMiddleware
 
 # ------------------------
@@ -27,10 +25,10 @@ app = FastAPI()
 # ------------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # Adjust to match your frontend URL
+    allow_origins=["http://localhost:3000"],  # Match frontend URL
     allow_credentials=True,
-    allow_methods=["*"],  # Allow all methods (GET, POST, etc.)
-    allow_headers=["*"],  # Allow all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # ------------------------
@@ -40,8 +38,8 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - [%(levelname)s] - %(message)s",
     handlers=[
-        logging.FileHandler("app.log"),  # Log to a file
-        logging.StreamHandler()  # Log to console
+        logging.FileHandler("app.log"),
+        logging.StreamHandler()
     ]
 )
 logger = logging.getLogger(__name__)
@@ -60,9 +58,7 @@ async def log_requests(request: Request, call_next):
     logger.info(f"Incoming Request: {request.method} {request.url}")
     logger.info(f"Headers: {request.headers}")
     logger.info(f"Client: {request.client.host}")
-
     response = await call_next(request)
-
     logger.info(f"Response Status: {response.status_code}")
     return response
 
@@ -77,15 +73,6 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     return JSONResponse(
         status_code=exc.status_code,
         content={"detail": exc.detail},
-    )
-
-
-@app.exception_handler(ValueError)
-async def value_error_handler(request: Request, exc: ValueError):
-    logger.error(f"ValueError: {str(exc)}")
-    return JSONResponse(
-        status_code=400,
-        content={"detail": "Invalid input provided."},
     )
 
 
@@ -123,7 +110,7 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
 
     # Create new user
     new_user = User(
-        first_name=user.first_name,  # Matches the schema alias
+        first_name=user.first_name,  # Matches schema alias
         last_name=user.last_name,
         email=user.email,
         password=pwd_context.hash(user.password),
@@ -145,11 +132,13 @@ def login(
 ):
     logger.info(f"Login attempt: {form_data.username}")
 
+    # Authenticate user
     user = authenticate_user(db, form_data.username, form_data.password)
     if not user:
         logger.warning("Login failed: Invalid credentials")
         raise HTTPException(status_code=401, detail="Incorrect email or password")
 
+    # Create access token
     access_token = create_access_token(data={"sub": str(user.id)})
     logger.info("Login successful")
     return {"access_token": access_token, "token_type": "bearer"}
