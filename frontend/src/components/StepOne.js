@@ -3,15 +3,11 @@ import {
     TextField,
     Button,
     Box,
-    Typography,
     Snackbar,
     Alert,
 } from "@mui/material";
-import { useNavigate } from "react-router-dom";
 
 const StepOne = ({ formData, handleChange, handleNext }) => {
-    const navigate = useNavigate(); // React Router hook for navigation
-
     // Snackbar States
     const [openSnackbar, setOpenSnackbar] = useState(false); // Controls visibility
     const [snackbarMessage, setSnackbarMessage] = useState(""); // Snackbar text
@@ -38,11 +34,6 @@ const StepOne = ({ formData, handleChange, handleNext }) => {
 
     return (
         <Box>
-            {/* Title */}
-            <Typography variant="h5" gutterBottom>
-                Register - Step 1
-            </Typography>
-
             {/* Email Input */}
             <TextField
                 fullWidth
@@ -55,18 +46,8 @@ const StepOne = ({ formData, handleChange, handleNext }) => {
                 variant="outlined"
             />
 
-            {/* Navigation Buttons */}
-            <Box sx={{ display: "flex", justifyContent: "space-between", marginTop: 2 }}>
-                {/* Back to Login Button */}
-                <Button
-                    variant="contained" // Same as Next button
-                    color="primary"    // Same color as Next button
-                    onClick={() => navigate("/login")} // Navigate back to login
-                >
-                    Back to Login
-                </Button>
-
-                {/* Next Button */}
+            {/* Next Button Centered */}
+            <Box sx={{ display: "flex", justifyContent: "center", marginTop: 2 }}>
                 <Button variant="contained" color="primary" onClick={handleProceed}>
                     Next
                 </Button>
