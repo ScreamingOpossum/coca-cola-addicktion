@@ -9,30 +9,52 @@ import {
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 
 const StepTwo = ({ formData, handleChange, handleSubmit, handleBack }) => {
+    // States for Password Visibility
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [confirmPassword, setConfirmPassword] = useState("");
-    const [error, setError] = useState("");
 
-    // Toggle Password Visibility
+    // Error State for Validations
+    const [error, setError] = useState({});
+
+    // Toggle Visibility for Password Fields
     const handleTogglePassword = () => setShowPassword(!showPassword);
-    const handleToggleConfirmPassword = () => setShowConfirmPassword(!showConfirmPassword);
+    const handleToggleConfirmPassword = () =>
+        setShowConfirmPassword(!showConfirmPassword);
 
-    // Validate Password Match
-    const validatePasswords = () => {
-        if (formData.password !== confirmPassword) {
-            setError("Passwords do not match!");
-            return false;
-        }
-        setError("");
-        return true;
-    };
-
-    // Handle Submit with Validation
+    // Final Submit Validation
     const handleFinalSubmit = () => {
-        if (validatePasswords()) {
-            handleSubmit(); // Proceed with form submission
+        const newErrors = {};
+
+        // Field Validations
+        if (!formData.firstName.trim()) {
+            newErrors.firstName = "First Name is required.";
         }
+        if (!formData.lastName.trim()) {
+            newErrors.lastName = "Last Name is required.";
+        }
+        if (!formData.dateOfBirth) {
+            newErrors.dateOfBirth = "Date of Birth is required.";
+        }
+        if (!formData.monthlyGoal || parseFloat(formData.monthlyGoal) <= 0) {
+            newErrors.monthlyGoal = "Monthly Goal should be greater than 0.";
+        }
+        if (!formData.password || formData.password.length < 8) {
+            newErrors.password = "Password must be at least 8 characters.";
+        }
+        if (formData.password !== formData.confirmPassword) {
+            newErrors.confirmPassword = "Passwords do not match.";
+        }
+
+        // Set Errors
+        setError(newErrors);
+
+        // Stop Submission if Errors Exist
+        if (Object.keys(newErrors).length > 0) {
+            return;
+        }
+
+        // Proceed with Submission if Valid
+        handleSubmit();
     };
 
     return (
@@ -46,6 +68,8 @@ const StepTwo = ({ formData, handleChange, handleSubmit, handleBack }) => {
                 value={formData.firstName}
                 onChange={handleChange}
                 variant="outlined"
+                error={!!error.firstName}
+                helperText={error.firstName}
             />
 
             {/* Last Name */}
@@ -57,6 +81,8 @@ const StepTwo = ({ formData, handleChange, handleSubmit, handleBack }) => {
                 value={formData.lastName}
                 onChange={handleChange}
                 variant="outlined"
+                error={!!error.lastName}
+                helperText={error.lastName}
             />
 
             {/* Date of Birth */}
@@ -70,6 +96,8 @@ const StepTwo = ({ formData, handleChange, handleSubmit, handleBack }) => {
                 value={formData.dateOfBirth}
                 onChange={handleChange}
                 variant="outlined"
+                error={!!error.dateOfBirth}
+                helperText={error.dateOfBirth}
             />
 
             {/* Monthly Goal */}
@@ -82,6 +110,8 @@ const StepTwo = ({ formData, handleChange, handleSubmit, handleBack }) => {
                 value={formData.monthlyGoal}
                 onChange={handleChange}
                 variant="outlined"
+                error={!!error.monthlyGoal}
+                helperText={error.monthlyGoal}
             />
 
             {/* Password */}
@@ -94,6 +124,8 @@ const StepTwo = ({ formData, handleChange, handleSubmit, handleBack }) => {
                 value={formData.password}
                 onChange={handleChange}
                 variant="outlined"
+                error={!!error.password}
+                helperText={error.password}
                 InputProps={{
                     endAdornment: (
                         <InputAdornment position="end">
@@ -110,17 +142,22 @@ const StepTwo = ({ formData, handleChange, handleSubmit, handleBack }) => {
                 fullWidth
                 margin="normal"
                 label="Confirm Password"
+                name="confirmPassword" // Use formData directly
                 type={showConfirmPassword ? "text" : "password"}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
+                value={formData.confirmPassword} // Directly connected
+                onChange={handleChange} // No need for separate state
                 variant="outlined"
-                error={!!error} // Show error state
-                helperText={error} // Show error message
+                error={!!error.confirmPassword} // Show error state
+                helperText={error.confirmPassword} // Display error message
                 InputProps={{
                     endAdornment: (
                         <InputAdornment position="end">
                             <IconButton onClick={handleToggleConfirmPassword} edge="end">
-                                {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                                {showConfirmPassword ? (
+                                    <VisibilityOff />
+                                ) : (
+                                    <Visibility />
+                                )}
                             </IconButton>
                         </InputAdornment>
                     ),
@@ -132,7 +169,11 @@ const StepTwo = ({ formData, handleChange, handleSubmit, handleBack }) => {
                 <Button variant="contained" onClick={handleBack}>
                     Back
                 </Button>
-                <Button variant="contained" color="primary" onClick={handleFinalSubmit}>
+                <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleFinalSubmit} // Trigger validation on click
+                >
                     Finish
                 </Button>
             </Box>
