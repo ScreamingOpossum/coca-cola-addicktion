@@ -5,6 +5,8 @@ import {
     IconButton,
     InputAdornment,
     Box,
+    Snackbar,
+    Alert,
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 
@@ -16,10 +18,18 @@ const StepTwo = ({ formData, handleChange, handleSubmit, handleBack }) => {
     // Error State for Validations
     const [error, setError] = useState({});
 
+    // Snackbar State
+    const [snackbarOpen, setSnackbarOpen] = useState(false); // Controls Snackbar visibility
+    const [snackbarMessage, setSnackbarMessage] = useState(""); // Snackbar text
+    const [snackbarSeverity, setSnackbarSeverity] = useState("error"); // Error or success
+
     // Toggle Visibility for Password Fields
     const handleTogglePassword = () => setShowPassword(!showPassword);
     const handleToggleConfirmPassword = () =>
         setShowConfirmPassword(!showConfirmPassword);
+
+    // Close Snackbar
+    const handleCloseSnackbar = () => setSnackbarOpen(false);
 
     // Final Submit Validation
     const handleFinalSubmit = () => {
@@ -48,10 +58,18 @@ const StepTwo = ({ formData, handleChange, handleSubmit, handleBack }) => {
         // Set Errors
         setError(newErrors);
 
-        // Stop Submission if Errors Exist
+        // Show Error Message if Validation Fails
         if (Object.keys(newErrors).length > 0) {
-            return;
+            setSnackbarMessage("Please fix errors before proceeding.");
+            setSnackbarSeverity("error");
+            setSnackbarOpen(true); // Show pop-up
+            return; // Stop submission
         }
+
+        // Success Snackbar and Submit
+        setSnackbarMessage("Registration successful!");
+        setSnackbarSeverity("success");
+        setSnackbarOpen(true);
 
         // Proceed with Submission if Valid
         handleSubmit();
@@ -142,13 +160,13 @@ const StepTwo = ({ formData, handleChange, handleSubmit, handleBack }) => {
                 fullWidth
                 margin="normal"
                 label="Confirm Password"
-                name="confirmPassword" // Use formData directly
+                name="confirmPassword"
                 type={showConfirmPassword ? "text" : "password"}
-                value={formData.confirmPassword} // Directly connected
-                onChange={handleChange} // No need for separate state
+                value={formData.confirmPassword}
+                onChange={handleChange}
                 variant="outlined"
-                error={!!error.confirmPassword} // Show error state
-                helperText={error.confirmPassword} // Display error message
+                error={!!error.confirmPassword}
+                helperText={error.confirmPassword}
                 InputProps={{
                     endAdornment: (
                         <InputAdornment position="end">
@@ -177,6 +195,22 @@ const StepTwo = ({ formData, handleChange, handleSubmit, handleBack }) => {
                     Finish
                 </Button>
             </Box>
+
+            {/* Snackbar Notification */}
+            <Snackbar
+                open={snackbarOpen}
+                autoHideDuration={3000} // Close after 3 seconds
+                onClose={handleCloseSnackbar}
+                anchorOrigin={{ vertical: "top", horizontal: "center" }}
+            >
+                <Alert
+                    onClose={handleCloseSnackbar}
+                    severity={snackbarSeverity} // Error or success style
+                    sx={{ width: "100%" }}
+                >
+                    {snackbarMessage}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 };
