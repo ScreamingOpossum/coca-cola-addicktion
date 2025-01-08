@@ -133,10 +133,32 @@ const Login = () => {
                 {/* Links */}
                 <Box mt={2}>
                     <Typography>
-                        Don't have an account? <Link to="/register">Register</Link>
+                        Don't have an account?{" "}
+                        <Link
+                            to="/register"
+                            style={{
+                                textDecoration: "none",
+                                color: "blue",
+                            }}
+                            onMouseOver={(e) => (e.target.style.textDecoration = "underline")}
+                            onMouseOut={(e) => (e.target.style.textDecoration = "none")}
+                        >
+                            Register
+                        </Link>
                     </Typography>
                     <Typography sx={{ mt: 1 }}>
-                        Forgot your password? <Link to="/forgotpassword">Reset Password</Link>
+                        Forgot your password?{" "}
+                        <Link
+                            to="/forgotpassword" // FIXED LINK REDIRECTION
+                            style={{
+                                textDecoration: "none",
+                                color: "blue",
+                            }}
+                            onMouseOver={(e) => (e.target.style.textDecoration = "underline")}
+                            onMouseOut={(e) => (e.target.style.textDecoration = "none")}
+                        >
+                            Reset Password
+                        </Link>
                     </Typography>
                 </Box>
             </Box>
