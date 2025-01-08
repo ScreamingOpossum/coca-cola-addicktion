@@ -1,7 +1,8 @@
 import React from "react";
-import { Grid, Card, CardContent, Typography, Box } from "@mui/material";
+import { Grid, Card, CardContent, Typography, Box, Toolbar } from "@mui/material";
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts";
 
+// Mock data for the chart
 const data = [
   { name: "Mon", liters: 2 },
   { name: "Tue", liters: 3 },
@@ -12,12 +13,28 @@ const data = [
   { name: "Sun", liters: 3.5 },
 ];
 
+// Dashboard Component
 export default function Dashboard() {
   return (
-    <Box sx={{ padding: 4 }}>
+    // Ensures the content is pushed to the right of the sidebar
+    <Box
+      component="main"
+      sx={{
+        flexGrow: 1,
+        p: 3, // Padding
+        marginLeft: '250px', // Matches sidebar width
+        width: 'calc(100% - 250px)', // Adjust width dynamically
+      }}
+    >
+      {/* Toolbar Spacer */}
+      <Toolbar />
+
+      {/* Title */}
       <Typography variant="h4" gutterBottom>
         Dashboard
       </Typography>
+
+      {/* Dashboard Metrics */}
       <Grid container spacing={3}>
         <Grid item xs={12} sm={6} md={3}>
           <Card elevation={4}>
@@ -39,8 +56,8 @@ export default function Dashboard() {
           <Card elevation={4}>
             <CardContent>
               <Typography variant="h6">Weekly Trends</Typography>
-              <LineChart width={600} height={300} data={data}>
-                <Line type="monotone" dataKey="liters" stroke="#1976d2" />
+              <LineChart width={800} height={300} data={data}>
+                <Line type="monotone" dataKey="liters" stroke="#e63946" /> {/* Updated to Coca-Cola red */}
                 <CartesianGrid stroke="#ccc" />
                 <XAxis dataKey="name" />
                 <YAxis />
