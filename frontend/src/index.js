@@ -1,14 +1,14 @@
 import React from "react";
-import ReactDOM from "react-dom/client"; // Updated import for React 18
+import ReactDOM from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext"; // Ensure AuthProvider is imported
 import App from "./App";
-import "./index.css";
-import { AuthProvider } from "./context/AuthContext"; // Import the AuthProvider
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
-    <AuthProvider>
-        <React.StrictMode>
+    <BrowserRouter>
+        <AuthProvider>
             <App />
-        </React.StrictMode>
-    </AuthProvider>
+        </AuthProvider>
+    </BrowserRouter>
 );

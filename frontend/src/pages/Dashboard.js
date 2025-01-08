@@ -1,6 +1,14 @@
 import React from "react";
-import { Grid, Card, CardContent, Typography, Box, Toolbar } from "@mui/material";
-import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts";
+import {
+  Grid,
+  Card,
+  CardContent,
+  Typography,
+  Box,
+  Toolbar,
+  useTheme
+} from "@mui/material";
+import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 // Mock data for the chart
 const data = [
@@ -15,54 +23,106 @@ const data = [
 
 // Dashboard Component
 export default function Dashboard() {
+  const theme = useTheme(); // Material-UI Theme for dynamic styling
+
   return (
-    // Ensures the content is pushed to the right of the sidebar
     <Box
       component="main"
       sx={{
         flexGrow: 1,
-        p: 3, // Padding
-        marginLeft: '250px', // Matches sidebar width
-        width: 'calc(100% - 250px)', // Adjust width dynamically
+        p: 3, // Consistent padding for spacing
+        minHeight: "100vh", // Ensure the full viewport height is utilized
+        backgroundColor: theme.palette.background.default, // Adapt to theme background
       }}
     >
-      {/* Toolbar Spacer */}
+      {/* Toolbar Spacer for Sidebar */}
       <Toolbar />
 
-      {/* Title */}
+      {/* Dashboard Title */}
       <Typography variant="h4" gutterBottom>
         Dashboard
       </Typography>
 
       {/* Dashboard Metrics */}
       <Grid container spacing={3}>
+        {/* Today’s Consumption */}
         <Grid item xs={12} sm={6} md={3}>
           <Card elevation={4}>
             <CardContent>
               <Typography variant="h6">Today’s Consumption</Typography>
-              <Typography variant="h4">2.5 L</Typography>
+              <Typography variant="h4" color="primary">
+                2.5 L
+              </Typography>
             </CardContent>
           </Card>
         </Grid>
+
+        {/* Weekly Consumption */}
         <Grid item xs={12} sm={6} md={3}>
           <Card elevation={4}>
             <CardContent>
               <Typography variant="h6">Weekly Consumption</Typography>
-              <Typography variant="h4">20 L</Typography>
+              <Typography variant="h4" color="primary">
+                20 L
+              </Typography>
             </CardContent>
           </Card>
         </Grid>
+
+        {/* Monthly Average (Placeholder Example) */}
+        <Grid item xs={12} sm={6} md={3}>
+          <Card elevation={4}>
+            <CardContent>
+              <Typography variant="h6">Monthly Average</Typography>
+              <Typography variant="h4" color="primary">
+                3.0 L
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Spending Overview (Placeholder Example) */}
+        <Grid item xs={12} sm={6} md={3}>
+          <Card elevation={4}>
+            <CardContent>
+              <Typography variant="h6">Total Spending</Typography>
+              <Typography variant="h4" color="primary">
+                $45
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Weekly Trends Chart */}
         <Grid item xs={12}>
           <Card elevation={4}>
             <CardContent>
-              <Typography variant="h6">Weekly Trends</Typography>
-              <LineChart width={800} height={300} data={data}>
-                <Line type="monotone" dataKey="liters" stroke="#e63946" /> {/* Updated to Coca-Cola red */}
-                <CartesianGrid stroke="#ccc" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-              </LineChart>
+              <Typography variant="h6" gutterBottom>
+                Weekly Trends
+              </Typography>
+              {/* Responsive Container for Chart */}
+              <Box
+                sx={{
+                  width: "100%",
+                  height: 350, // Fixed height for consistent scaling
+                  padding: 2, // Adds spacing within the chart container
+                }}
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={data}>
+                    <Line
+                      type="monotone"
+                      dataKey="liters"
+                      stroke={theme.palette.primary.main} // Dynamic primary color
+                      strokeWidth={2}
+                    />
+                    <CartesianGrid stroke="#e0e0e0" strokeDasharray="5 5" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                  </LineChart>
+                </ResponsiveContainer>
+              </Box>
             </CardContent>
           </Card>
         </Grid>

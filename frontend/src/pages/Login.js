@@ -1,38 +1,52 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
     TextField,
     Button,
-    Typography,
     Container,
     Box,
     InputAdornment,
     IconButton,
+    Snackbar,
     Alert,
+    Typography,
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { AuthContext } from "../context/AuthContext";
 
 const Login = () => {
-    const { login } = useContext(AuthContext); // Use AuthContext for authentication
+    const { login, token } = useContext(AuthContext); // Auth context
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [showPassword, setShowPassword] = useState(false); // Toggle password visibility
-    const [error, setError] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const [error, setError] = useState(""); // Error state
+    const [snackbarOpen, setSnackbarOpen] = useState(false); // Snackbar visibility
     const navigate = useNavigate();
+
+    // Redirect logged-in user directly to Dashboard
+    useEffect(() => {
+        if (token) {
+            navigate("/dashboard");
+        }
+    }, [token, navigate]);
 
     // Toggle password visibility
     const handleTogglePassword = () => {
         setShowPassword(!showPassword);
     };
 
+    // Close Snackbar
+    const handleCloseSnackbar = () => {
+        setSnackbarOpen(false);
+    };
+
     // Handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError(""); // Clear previous error
+        setError(""); // Clear any previous errors
 
         try {
-            // Make API call using form-data format required by FastAPI OAuth2
+            // Make API call to login endpoint
             const response = await fetch("http://localhost:8000/auth/login", {
                 method: "POST",
                 headers: {
@@ -46,23 +60,23 @@ const Login = () => {
 
             const data = await response.json();
 
-            // Handle response
+            // Successful login
             if (response.ok && data.access_token) {
                 login(data); // Save token in AuthContext
                 navigate("/dashboard"); // Redirect to Dashboard
             } else {
-                // Handle structured errors from backend
+                // Handle errors from backend
                 if (Array.isArray(data.detail)) {
-                    const errorMessage = data.detail
-                        .map((err) => err.msg) // Extract error messages
-                        .join(", ");
+                    const errorMessage = data.detail.map((err) => err.msg).join(", ");
                     setError(errorMessage || "Invalid email or password!");
                 } else {
                     setError(data.detail || "Invalid email or password!");
                 }
+                setSnackbarOpen(true); // Show Snackbar
             }
         } catch (err) {
-            setError("Login failed. Please try again."); // Network or unexpected error
+            setError("Login failed. Please try again.");
+            setSnackbarOpen(true); // Show Snackbar
             console.error(err);
         }
     };
@@ -72,6 +86,7 @@ const Login = () => {
             <Box
                 sx={{
                     marginTop: 8,
+                    marginBottom: 8, // Add bottom margin
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
@@ -81,10 +96,7 @@ const Login = () => {
                     Login
                 </Typography>
 
-                {/* Display Errors */}
-                {error && <Alert severity="error">{error}</Alert>}
-
-                {/* Form */}
+                {/* Login Form */}
                 <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
                     {/* Email Input */}
                     <TextField
@@ -105,7 +117,7 @@ const Login = () => {
                         variant="outlined"
                         margin="normal"
                         required
-                        type={showPassword ? "text" : "password"} // Show/Hide Password
+                        type={showPassword ? "text" : "password"}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         InputProps={{
@@ -149,7 +161,7 @@ const Login = () => {
                     <Typography sx={{ mt: 1 }}>
                         Forgot your password?{" "}
                         <Link
-                            to="/forgotpassword" // FIXED LINK REDIRECTION
+                            to="/forgotpassword"
                             style={{
                                 textDecoration: "none",
                                 color: "blue",
@@ -162,6 +174,22 @@ const Login = () => {
                     </Typography>
                 </Box>
             </Box>
+
+            {/* Snackbar Notification */}
+            <Snackbar
+                open={snackbarOpen}
+                autoHideDuration={3000} // Close after 3 seconds
+                onClose={handleCloseSnackbar}
+                anchorOrigin={{ vertical: "top", horizontal: "center" }}
+            >
+                <Alert
+                    onClose={handleCloseSnackbar}
+                    severity="error" // Error style
+                    sx={{ width: "100%" }}
+                >
+                    {error}
+                </Alert>
+            </Snackbar>
         </Container>
     );
 };
