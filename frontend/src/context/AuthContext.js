@@ -1,13 +1,15 @@
 import React, { createContext, useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 // Create Context
 export const AuthContext = createContext();
 
 // AuthProvider Component
-export const AuthProvider = ({ children, navigate }) => {
+export const AuthProvider = ({ children }) => {
     // State Variables
     const [user, setUser] = useState(null); // Stores user data
     const [token, setToken] = useState(null); // Stores auth token
+    const navigate = useNavigate(); // React Router hook for navigation
 
     // Load token and user data from localStorage when the app starts
     useEffect(() => {
@@ -49,21 +51,47 @@ export const AuthProvider = ({ children, navigate }) => {
         setUser(user);
 
         // Redirect to Dashboard
-        if (navigate) navigate("/dashboard");
+        navigate("/dashboard");
     };
 
     // Logout function - clears token and user data
-    const logout = () => {
-        // Clear localStorage
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+    const logout = async () => {
+        try {
+            // Call the logout endpoint
+            const response = await fetch("http://localhost:8000/auth/logout", {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
 
-        // Update State
-        setToken(null);
-        setUser(null);
+            if (!response.ok) {
+                console.error("Failed to logout:", response.statusText);
+            } else {
+                console.log("Logout successful");
+            }
 
-        // Redirect to Login Page
-        if (navigate) navigate("/login");
+            // Clear localStorage and state
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+
+            setToken(null);
+            setUser(null);
+
+            // Redirect to Login Page
+            navigate("/login");
+        } catch (error) {
+            console.error("Logout error:", error);
+
+            // Fallback: Clear data if backend fails
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+
+            setToken(null);
+            setUser(null);
+
+            navigate("/login");
+        }
     };
 
     return (

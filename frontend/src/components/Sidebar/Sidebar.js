@@ -1,11 +1,32 @@
-import React from 'react';
-import { Drawer, List, ListItem, ListItemIcon, ListItemText, Toolbar, Divider, Box } from '@mui/material';
-import { FaChartBar, FaGlassWhiskey, FaMoneyBillWave, FaUser, FaQuestionCircle, FaSignOutAlt, FaChartLine, FaCommentDots } from 'react-icons/fa';
+import React, { useContext } from 'react';
+import {
+    Drawer,
+    List,
+    ListItem,
+    ListItemIcon,
+    ListItemText,
+    Toolbar,
+    Divider,
+    Box,
+} from '@mui/material';
+import {
+    FaChartBar,
+    FaGlassWhiskey,
+    FaMoneyBillWave,
+    FaUser,
+    FaQuestionCircle,
+    FaSignOutAlt,
+    FaChartLine,
+    FaCommentDots,
+} from 'react-icons/fa';
 import { NavLink } from 'react-router-dom';
+import { AuthContext } from "../../context/AuthContext"; // Import AuthContext for logout
 
 const drawerWidth = 250;
 
 const Sidebar = () => {
+    const { logout } = useContext(AuthContext); // Access the logout function from context
+
     return (
         <Drawer
             variant="permanent"
@@ -75,7 +96,7 @@ const Sidebar = () => {
 
             {/* Footer */}
             <Box sx={{ position: 'absolute', bottom: 20, width: '100%', textAlign: 'center' }}>
-                <ListItem component={NavLink} to="/logout" sx={{ color: '#e63946' }}>
+                <ListItem button onClick={logout} sx={{ color: '#e63946' }}> {/* Trigger logout */}
                     <ListItemIcon sx={{ color: '#e63946' }}>
                         <FaSignOutAlt />
                     </ListItemIcon>

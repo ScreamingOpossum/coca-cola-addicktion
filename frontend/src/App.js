@@ -35,7 +35,7 @@ const routes = [
 
 // Main App Component
 function App() {
-    const { token, setToken } = useContext(AuthContext); // Access token and setter
+    const { token, setToken, logout } = useContext(AuthContext); // Access token, setter, and logout function
 
     // Persist Authentication from LocalStorage/SessionStorage
     useEffect(() => {
@@ -44,6 +44,18 @@ function App() {
             setToken(savedToken); // Restore token if it exists
         }
     }, [token, setToken]); // React only when dependencies change
+
+    // Auto-logout on token expiration (optional)
+    useEffect(() => {
+        if (token) {
+            const tokenExpirationTime = 60 * 60 * 1000; // 1 hour for example
+            const timer = setTimeout(() => {
+                logout(); // Automatically log out
+            }, tokenExpirationTime);
+
+            return () => clearTimeout(timer); // Cleanup timer on component unmount
+        }
+    }, [token, logout]);
 
     return (
         <div className="app-container">
