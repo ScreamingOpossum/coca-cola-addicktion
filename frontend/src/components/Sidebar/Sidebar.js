@@ -46,31 +46,31 @@ const Sidebar = () => {
             <Box sx={{ overflow: 'auto' }}>
                 <List>
                     {/* Navigation Items */}
-                    <ListItem component={NavLink} to="/dashboard" sx={{ color: '#ffffff' }}>
+                    <ListItem component={NavLink} to="/dashboard" button sx={{ color: '#ffffff' }}>
                         <ListItemIcon sx={{ color: '#ffffff' }}>
                             <FaChartBar />
                         </ListItemIcon>
                         <ListItemText primary="Dashboard" />
                     </ListItem>
-                    <ListItem component={NavLink} to="/consumption" sx={{ color: '#ffffff' }}>
+                    <ListItem component={NavLink} to="/consumption" button sx={{ color: '#ffffff' }}>
                         <ListItemIcon sx={{ color: '#ffffff' }}>
                             <FaGlassWhiskey />
                         </ListItemIcon>
                         <ListItemText primary="Consumption" />
                     </ListItem>
-                    <ListItem component={NavLink} to="/spending" sx={{ color: '#ffffff' }}>
+                    <ListItem component={NavLink} to="/spending" button sx={{ color: '#ffffff' }}>
                         <ListItemIcon sx={{ color: '#ffffff' }}>
                             <FaMoneyBillWave />
                         </ListItemIcon>
                         <ListItemText primary="Spending" />
                     </ListItem>
-                    <ListItem component={NavLink} to="/analytics" sx={{ color: '#ffffff' }}>
+                    <ListItem component={NavLink} to="/analytics" button sx={{ color: '#ffffff' }}>
                         <ListItemIcon sx={{ color: '#ffffff' }}>
                             <FaChartLine />
                         </ListItemIcon>
                         <ListItemText primary="Analytics" />
                     </ListItem>
-                    <ListItem component={NavLink} to="/profile" sx={{ color: '#ffffff' }}>
+                    <ListItem component={NavLink} to="/profile" button sx={{ color: '#ffffff' }}>
                         <ListItemIcon sx={{ color: '#ffffff' }}>
                             <FaUser />
                         </ListItemIcon>
@@ -79,13 +79,13 @@ const Sidebar = () => {
                 </List>
                 <Divider />
                 <List>
-                    <ListItem component={NavLink} to="/help" sx={{ color: '#ffffff' }}>
+                    <ListItem component={NavLink} to="/help" button sx={{ color: '#ffffff' }}>
                         <ListItemIcon sx={{ color: '#ffffff' }}>
                             <FaQuestionCircle />
                         </ListItemIcon>
                         <ListItemText primary="Help & FAQ" />
                     </ListItem>
-                    <ListItem component={NavLink} to="/feedback" sx={{ color: '#ffffff' }}>
+                    <ListItem component={NavLink} to="/feedback" button sx={{ color: '#ffffff' }}>
                         <ListItemIcon sx={{ color: '#ffffff' }}>
                             <FaCommentDots />
                         </ListItemIcon>
@@ -96,7 +96,7 @@ const Sidebar = () => {
 
             {/* Footer */}
             <Box sx={{ position: 'absolute', bottom: 20, width: '100%', textAlign: 'center' }}>
-                <ListItem button onClick={logout} sx={{ color: '#e63946' }}> {/* Trigger logout */}
+                <ListItem button onClick={logout} sx={{ color: '#e63946' }}>
                     <ListItemIcon sx={{ color: '#e63946' }}>
                         <FaSignOutAlt />
                     </ListItemIcon>
