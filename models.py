@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, Float, Date, TIMESTAMP, func, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, Float, Date, TIMESTAMP, func, ForeignKey, Enum, CheckConstraint
 from sqlalchemy.orm import relationship, declarative_base
 import enum
+from datetime import date
 
 # Define Base
 Base = declarative_base()
@@ -24,7 +25,7 @@ class User(Base):
     password = Column(String, nullable=False)
     date_of_birth = Column(Date, nullable=False)
     monthly_goal = Column(Float, nullable=True)  # Liters
-    role = Column(Enum(RoleEnum), default=RoleEnum.user) # Default role is "user"
+    role = Column(Enum(RoleEnum), default=RoleEnum.user)  # Default role is "user"
 
     # Timestamps
     created_at = Column(TIMESTAMP, server_default=func.now())
@@ -63,8 +64,9 @@ class ConsumptionEntry(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     location_id = Column(Integer, ForeignKey("purchase_locations.id"), nullable=True)
-    date = Column(Date, nullable=False)
+    date = Column(Date, nullable=False, default=date.today)  # Default to today's date
     liters_consumed = Column(Float, nullable=False)
+    notes = Column(String, nullable=True)  # Field for optional comments
 
     # Timestamps
     created_at = Column(TIMESTAMP, server_default=func.now())
@@ -72,6 +74,11 @@ class ConsumptionEntry(Base):
     # Relationships
     user = relationship("User", back_populates="consumption_entries")
     location = relationship("PurchaseLocation", back_populates="consumption_entries")
+
+    # Constraints
+    __table_args__ = (
+        CheckConstraint("liters_consumed > 0", name="check_liters_positive"),
+    )
 
 
 # ----------------------------

@@ -7,6 +7,7 @@ import {
   Box,
   Toolbar,
   useTheme,
+  Alert,
 } from "@mui/material";
 import {
   LineChart,
@@ -36,7 +37,7 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const token = localStorage.getItem("token"); // Use "token" to match the backend
+        const token = localStorage.getItem("token");
         if (!token) {
           setError("No token found. Please log in.");
           navigate("/login"); // Redirect to login page
@@ -90,9 +91,9 @@ export default function Dashboard() {
       </Typography>
 
       {error && (
-        <Typography color="error" variant="body1" gutterBottom>
+        <Alert severity="error" sx={{ mb: 2 }}>
           {error}
-        </Typography>
+        </Alert>
       )}
 
       <Grid container spacing={3}>

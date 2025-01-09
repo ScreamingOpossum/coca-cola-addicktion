@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, EmailStr, validator
+from pydantic import BaseModel, Field, EmailStr
 from datetime import date, datetime
 from typing import Optional
 from enum import Enum
@@ -31,36 +31,39 @@ class RoleEnum(str, Enum):
 # --------------------------
 
 class UserBase(BaseModel):
-    first_name: str = Field(..., alias="firstName", min_length=1, max_length=50)  # Aliased for camelCase
+    first_name: str = Field(..., alias="firstName", min_length=1, max_length=50)
     last_name: str = Field(..., alias="lastName", min_length=1, max_length=50)
-    email: EmailStr  # Validates email format
-    date_of_birth: date = Field(..., alias="dateOfBirth")  # Aliased for camelCase
-    monthly_goal: Optional[float] = Field(None, alias="monthlyGoal", gt=0)  # Positive float only
-
-    class Config:
-        populate_by_name = True  # Use camelCase for JSON serialization
-        from_attributes = True  # ORM compatibility
-
-
-class UserCreate(UserBase):
-    password: str = Field(..., min_length=8)  # At least 8 characters
-
-
-class UserResponse(UserBase):
-    id: int
-    role: RoleEnum  # Read-only role field
-    created_at: Optional[date]  # Ensure backend provides this value in date format
-
-    # Validator to handle datetime to date conversion
-    @validator("created_at", pre=True, always=True)
-    def validate_created_at(cls, value):
-        if isinstance(value, datetime):
-            return value.date()  # Convert datetime to date
-        return value
+    email: EmailStr
+    date_of_birth: date = Field(..., alias="dateOfBirth")
+    monthly_goal: Optional[float] = Field(None, alias="monthlyGoal", gt=0)
 
     class Config:
         populate_by_name = True
         from_attributes = True
+
+
+class UserCreate(BaseModel):
+    first_name: str = Field(..., alias="firstName", min_length=1, max_length=50)
+    last_name: str = Field(..., alias="lastName", min_length=1, max_length=50)
+    email: EmailStr
+    password: str = Field(..., min_length=8)
+    date_of_birth: date = Field(..., alias="dateOfBirth")
+    monthly_goal: Optional[float] = Field(None, alias="monthlyGoal", gt=0)
+
+    class Config:
+        populate_by_name = True
+        from_attributes = True
+
+
+class UserResponse(UserBase):
+    id: int
+    role: RoleEnum
+    created_at: Optional[datetime]
+
+    class Config:
+        populate_by_name = True
+        from_attributes = True
+        json_encoders = {datetime: lambda v: v.date().isoformat()}
 
 
 # --------------------------
@@ -68,7 +71,7 @@ class UserResponse(UserBase):
 # --------------------------
 
 class LocationBase(BaseModel):
-    store_name: str = Field(..., alias="storeName", max_length=100)  # Aliased for camelCase
+    store_name: str = Field(..., alias="storeName", max_length=100)
     city: str = Field(..., max_length=50)
 
     class Config:
@@ -94,7 +97,8 @@ class LocationResponse(LocationBase):
 
 class ConsumptionBase(BaseModel):
     date: date
-    liters_consumed: float = Field(..., alias="litersConsumed", gt=0)  # Aliased for camelCase
+    liters_consumed: float = Field(..., alias="litersConsumed", gt=0)
+    notes: Optional[str] = Field(None, max_length=255)
 
     class Config:
         populate_by_name = True
@@ -102,8 +106,7 @@ class ConsumptionBase(BaseModel):
 
 
 class ConsumptionCreate(ConsumptionBase):
-    user_id: int = Field(..., alias="userId")  # Aliased for camelCase
-    location_id: Optional[int] = Field(None, alias="locationId")
+    pass  # Removed location_id field
 
     class Config:
         populate_by_name = True
@@ -124,7 +127,7 @@ class ConsumptionResponse(ConsumptionBase):
 
 class SpendingBase(BaseModel):
     date: date
-    amount_spent: float = Field(..., alias="amountSpent", gt=0)  # Aliased for camelCase
+    amount_spent: float = Field(..., alias="amountSpent", gt=0)
 
     class Config:
         populate_by_name = True
@@ -132,7 +135,6 @@ class SpendingBase(BaseModel):
 
 
 class SpendingCreate(SpendingBase):
-    user_id: int = Field(..., alias="userId")  # Aliased for camelCase
     location_id: Optional[int] = Field(None, alias="locationId")
 
     class Config:
@@ -142,6 +144,7 @@ class SpendingCreate(SpendingBase):
 
 class SpendingResponse(SpendingBase):
     id: int
+    location_id: Optional[int] = Field(None, alias="locationId")
 
     class Config:
         populate_by_name = True
