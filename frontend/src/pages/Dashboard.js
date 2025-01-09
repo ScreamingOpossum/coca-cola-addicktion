@@ -6,9 +6,17 @@ import {
   Typography,
   Box,
   Toolbar,
-  useTheme
+  useTheme,
 } from "@mui/material";
-import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import {
+  LineChart,
+  Line,
+  CartesianGrid,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 // Mock data for the chart
 const data = [
@@ -30,9 +38,11 @@ export default function Dashboard() {
       component="main"
       sx={{
         flexGrow: 1,
-        p: 3, // Consistent padding for spacing
-        minHeight: "100vh", // Ensure the full viewport height is utilized
-        backgroundColor: theme.palette.background.default, // Adapt to theme background
+        p: 3, // Padding for consistent spacing
+        marginLeft: "250px", // Push content right to avoid overlap
+        minHeight: "100vh", // Full height
+        overflowY: "auto", // Scroll content if too long
+        backgroundColor: theme.palette.background.default, // Dynamic background
       }}
     >
       {/* Toolbar Spacer for Sidebar */}
@@ -69,7 +79,7 @@ export default function Dashboard() {
           </Card>
         </Grid>
 
-        {/* Monthly Average (Placeholder Example) */}
+        {/* Monthly Average */}
         <Grid item xs={12} sm={6} md={3}>
           <Card elevation={4}>
             <CardContent>
@@ -81,7 +91,7 @@ export default function Dashboard() {
           </Card>
         </Grid>
 
-        {/* Spending Overview (Placeholder Example) */}
+        {/* Total Spending */}
         <Grid item xs={12} sm={6} md={3}>
           <Card elevation={4}>
             <CardContent>
@@ -100,12 +110,11 @@ export default function Dashboard() {
               <Typography variant="h6" gutterBottom>
                 Weekly Trends
               </Typography>
-              {/* Responsive Container for Chart */}
               <Box
                 sx={{
                   width: "100%",
                   height: 350, // Fixed height for consistent scaling
-                  padding: 2, // Adds spacing within the chart container
+                  padding: 2, // Adds spacing inside chart
                 }}
               >
                 <ResponsiveContainer width="100%" height="100%">
