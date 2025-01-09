@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   Grid,
   Card,
@@ -17,43 +17,84 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import axios from "axios";
+import { useNavigate } from "react-router-dom"; // For navigation
 
-// Mock data for the chart
-const data = [
-  { name: "Mon", liters: 2 },
-  { name: "Tue", liters: 3 },
-  { name: "Wed", liters: 1.5 },
-  { name: "Thu", liters: 4 },
-  { name: "Fri", liters: 3.2 },
-  { name: "Sat", liters: 2.5 },
-  { name: "Sun", liters: 3.5 },
-];
-
-// Dashboard Component
 export default function Dashboard() {
   const theme = useTheme(); // Material-UI Theme for dynamic styling
+  const navigate = useNavigate(); // For redirecting to login if unauthorized
+
+  // State for metrics and chart data
+  const [todayConsumption, setTodayConsumption] = useState(0);
+  const [weeklyConsumption, setWeeklyConsumption] = useState(0);
+  const [monthlyAverage, setMonthlyAverage] = useState(0);
+  const [totalSpending, setTotalSpending] = useState(0);
+  const [weeklyTrends, setWeeklyTrends] = useState([]);
+  const [error, setError] = useState(null); // For error messages
+
+  // Fetch data from the API
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const token = localStorage.getItem("token"); // Use "token" to match the backend
+        if (!token) {
+          setError("No token found. Please log in.");
+          navigate("/login"); // Redirect to login page
+          return;
+        }
+
+        const response = await axios.get("http://127.0.0.1:8000/dashboard", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = response.data;
+        setTodayConsumption(data.todayConsumption);
+        setWeeklyConsumption(data.weeklyConsumption);
+        setMonthlyAverage(data.monthlyAverage);
+        setTotalSpending(data.totalSpending);
+        setWeeklyTrends(data.weeklyTrends);
+        setError(null); // Clear any previous error
+      } catch (err) {
+        console.error("Error fetching dashboard data:", err);
+        setError(
+          err.response?.data?.detail || "Failed to fetch dashboard data."
+        );
+
+        if (err.response?.status === 401) {
+          localStorage.removeItem("token"); // Clear invalid token
+          navigate("/login"); // Redirect to login
+        }
+      }
+    };
+
+    fetchDashboardData();
+  }, [navigate]);
 
   return (
     <Box
       component="main"
       sx={{
         flexGrow: 1,
-        p: 3, // Padding for consistent spacing
-        marginLeft: "250px", // Push content right to avoid overlap
-        minHeight: "100vh", // Full height
-        overflowY: "auto", // Scroll content if too long
-        backgroundColor: theme.palette.background.default, // Dynamic background
+        p: 3,
+        marginLeft: "250px",
+        minHeight: "100vh",
+        overflowY: "auto",
+        backgroundColor: theme.palette.background.default,
       }}
     >
-      {/* Toolbar Spacer for Sidebar */}
       <Toolbar />
-
-      {/* Dashboard Title */}
       <Typography variant="h4" gutterBottom>
         Dashboard
       </Typography>
 
-      {/* Dashboard Metrics */}
+      {error && (
+        <Typography color="error" variant="body1" gutterBottom>
+          {error}
+        </Typography>
+      )}
+
       <Grid container spacing={3}>
         {/* Today’s Consumption */}
         <Grid item xs={12} sm={6} md={3}>
@@ -61,7 +102,7 @@ export default function Dashboard() {
             <CardContent>
               <Typography variant="h6">Today’s Consumption</Typography>
               <Typography variant="h4" color="primary">
-                2.5 L
+                {todayConsumption} L
               </Typography>
             </CardContent>
           </Card>
@@ -73,7 +114,7 @@ export default function Dashboard() {
             <CardContent>
               <Typography variant="h6">Weekly Consumption</Typography>
               <Typography variant="h4" color="primary">
-                20 L
+                {weeklyConsumption} L
               </Typography>
             </CardContent>
           </Card>
@@ -85,7 +126,7 @@ export default function Dashboard() {
             <CardContent>
               <Typography variant="h6">Monthly Average</Typography>
               <Typography variant="h4" color="primary">
-                3.0 L
+                {monthlyAverage} L
               </Typography>
             </CardContent>
           </Card>
@@ -97,7 +138,7 @@ export default function Dashboard() {
             <CardContent>
               <Typography variant="h6">Total Spending</Typography>
               <Typography variant="h4" color="primary">
-                $45
+                ${totalSpending}
               </Typography>
             </CardContent>
           </Card>
@@ -113,16 +154,16 @@ export default function Dashboard() {
               <Box
                 sx={{
                   width: "100%",
-                  height: 350, // Fixed height for consistent scaling
-                  padding: 2, // Adds spacing inside chart
+                  height: 350,
+                  padding: 2,
                 }}
               >
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={data}>
+                  <LineChart data={weeklyTrends}>
                     <Line
                       type="monotone"
                       dataKey="liters"
-                      stroke={theme.palette.primary.main} // Dynamic primary color
+                      stroke={theme.palette.primary.main}
                       strokeWidth={2}
                     />
                     <CartesianGrid stroke="#e0e0e0" strokeDasharray="5 5" />

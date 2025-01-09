@@ -18,7 +18,7 @@ console.log("Sidebar Loaded:", typeof Sidebar === "function");
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
-    const { token } = useContext(AuthContext); // Use token instead of user
+    const { token } = useContext(AuthContext);
     return token ? children : <Navigate to="/login" replace />;
 };
 
@@ -33,34 +33,32 @@ const routes = [
     { path: "/feedback", element: <Feedback /> },
 ];
 
-// Main App Component
 function App() {
-    const { token, setToken, logout } = useContext(AuthContext); // Access token, setter, and logout function
+    const { token, setToken, logout } = useContext(AuthContext);
 
-    // Persist Authentication from LocalStorage/SessionStorage
+    // Persist Authentication
     useEffect(() => {
         const savedToken = localStorage.getItem("token") || sessionStorage.getItem("token");
         if (savedToken && !token) {
-            setToken(savedToken); // Restore token if it exists
+            setToken(savedToken);
         }
-    }, [token, setToken]); // React only when dependencies change
+    }, [token, setToken]);
 
-    // Auto-logout on token expiration (optional)
+    // Auto Logout on Token Expiration
     useEffect(() => {
         if (token) {
-            const tokenExpirationTime = 60 * 60 * 1000; // 1 hour for example
+            const tokenExpirationTime = 60 * 60 * 1000; // 1 hour
             const timer = setTimeout(() => {
-                logout(); // Automatically log out
+                logout();
             }, tokenExpirationTime);
-
-            return () => clearTimeout(timer); // Cleanup timer on component unmount
+            return () => clearTimeout(timer);
         }
     }, [token, logout]);
 
     return (
         <div className="app-container">
-            {/* Render Sidebar only if authenticated */}
-            {token && typeof Sidebar === "function" && <Sidebar />}
+            {/* Sidebar visible only if authenticated */}
+            {token && <Sidebar />}
             <div className="content">
                 <Routes>
                     {/* Public Routes */}
