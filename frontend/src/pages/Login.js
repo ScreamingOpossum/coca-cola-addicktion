@@ -23,56 +23,47 @@ const Login = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false); // Snackbar visibility
   const navigate = useNavigate();
 
-  // Redirect logged-in user directly to Dashboard
   useEffect(() => {
-    // Avoid repeated navigation
     if (token) {
-      navigate("/dashboard", { replace: true }); // Replace history to prevent looping
+      navigate("/dashboard", { replace: true });
     }
   }, [token, navigate]);
 
-  // Toggle password visibility
   const handleTogglePassword = () => {
     setShowPassword(!showPassword);
   };
 
-  // Close Snackbar
   const handleCloseSnackbar = () => {
     setSnackbarOpen(false);
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(""); // Clear any previous errors
+    setError("");
 
     try {
-      // Make API call to login endpoint
       const response = await fetch("http://127.0.0.1:8000/auth/login", {
         method: "POST",
         headers: {
-          "Content-Type": "application/x-www-form-urlencoded", // Required format
+          "Content-Type": "application/x-www-form-urlencoded",
         },
         body: new URLSearchParams({
-          username: email, // Must use 'username' as per FastAPI OAuth2 spec
+          username: email, // Must match FastAPI's OAuth2 schema
           password: password,
         }),
       });
 
       const data = await response.json();
 
-      // Successful login
       if (response.ok && data.access_token) {
-        localStorage.setItem("token", data.access_token); // Save token for authenticated requests
-        login(data.access_token); // Save token in AuthContext
+        login({ access_token: data.access_token, user: { email } }); // Pass user info to context
       } else {
-        // Handle errors from backend
         setError(data.detail || "Invalid email or password!");
-        setSnackbarOpen(true); // Show Snackbar
+        setSnackbarOpen(true);
       }
     } catch (err) {
       setError("Login failed. Please try again.");
-      setSnackbarOpen(true); // Show Snackbar
+      setSnackbarOpen(true);
       console.error(err);
     }
   };
@@ -82,7 +73,7 @@ const Login = () => {
       <Box
         sx={{
           marginTop: 8,
-          marginBottom: 8, // Add bottom margin
+          marginBottom: 8,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -92,9 +83,7 @@ const Login = () => {
           Login
         </Typography>
 
-        {/* Login Form */}
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
-          {/* Email Input */}
           <TextField
             fullWidth
             label="Email Address"
@@ -106,7 +95,6 @@ const Login = () => {
             onChange={(e) => setEmail(e.target.value)}
           />
 
-          {/* Password Input */}
           <TextField
             fullWidth
             label="Password"
@@ -127,7 +115,6 @@ const Login = () => {
             }}
           />
 
-          {/* Submit Button */}
           <Button
             type="submit"
             fullWidth
@@ -139,7 +126,6 @@ const Login = () => {
           </Button>
         </Box>
 
-        {/* Links */}
         <Box mt={2}>
           <Typography>
             Don't have an account?{" "}
@@ -156,16 +142,26 @@ const Login = () => {
         </Box>
       </Box>
 
-      {/* Snackbar Notification */}
+      <Typography
+        sx={{
+          fontStyle: "italic",
+          color: "gray",
+          textAlign: "center",
+          marginTop: 2,
+        }}
+      >
+        "It's not an addiction until you've sucked d___ for it."
+      </Typography>
+
       <Snackbar
         open={snackbarOpen}
-        autoHideDuration={3000} // Close after 3 seconds
+        autoHideDuration={3000}
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
         <Alert
           onClose={handleCloseSnackbar}
-          severity="error" // Error severity
+          severity="error"
           sx={{ width: "100%" }}
         >
           {error}

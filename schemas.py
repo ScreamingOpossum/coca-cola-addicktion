@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, EmailStr
 from datetime import date, datetime
-from typing import Optional
+from typing import Optional, List
 from enum import Enum
 
 
@@ -115,6 +115,25 @@ class ConsumptionCreate(ConsumptionBase):
 
 class ConsumptionResponse(ConsumptionBase):
     id: int
+
+    class Config:
+        populate_by_name = True
+        from_attributes = True
+
+
+class MonthlyConsumptionResponse(BaseModel):
+    month: str
+    total_consumption: float
+    average_daily_consumption: float
+    highest_consumption: Optional[dict]
+
+    class Config:
+        populate_by_name = True
+        from_attributes = True
+
+
+class MonthlyConsumptionHistoryResponse(BaseModel):
+    data: List[MonthlyConsumptionResponse]
 
     class Config:
         populate_by_name = True

@@ -1,33 +1,23 @@
 import React, { createContext, useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 
-// Create Context
 export const AuthContext = createContext();
 
-// AuthProvider Component
 export const AuthProvider = ({ children }) => {
-  // State Variables
-  const [user, setUser] = useState(null); // Stores user data
-  const [token, setToken] = useState(null); // Stores auth token
-  const navigate = useNavigate(); // React Router hook for navigation
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
+  const navigate = useNavigate();
 
-  // Load token and user data from localStorage when the app starts
   useEffect(() => {
     const savedToken = localStorage.getItem("token");
     const savedUser = localStorage.getItem("user");
 
     if (savedToken && savedUser) {
-      try {
-        setToken(savedToken);
-        setUser(JSON.parse(savedUser)); // Parse user JSON data
-      } catch (error) {
-        console.error("Failed to load user data:", error);
-        localStorage.clear(); // Clear corrupted data
-      }
+      setToken(savedToken);
+      setUser(JSON.parse(savedUser));
     }
   }, []);
 
-  // Persist token and user data when state updates
   useEffect(() => {
     if (token) {
       localStorage.setItem("token", token);
@@ -42,56 +32,43 @@ export const AuthProvider = ({ children }) => {
     }
   }, [token, user]);
 
-  // Helper function to clear auth data
   const clearAuthData = useCallback(() => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
-
     setToken(null);
     setUser(null);
-
-    navigate("/login"); // Redirect to Login Page
+    navigate("/login");
   }, [navigate]);
 
-  // Login function - saves user data and token
-  const login = (data) => {
-    const { access_token, user } = data;
-
-    // Update State
+  const login = ({ access_token, user }) => {
     setToken(access_token);
     setUser(user);
-
-    // Redirect to Dashboard
     navigate("/dashboard");
   };
 
-  // Logout function - clears token and user data
   const logout = async () => {
     try {
-      // Optional: Call the logout endpoint if implemented in the backend
-      const response = await fetch("http://localhost:8000/auth/logout", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      if (token) {
+        const response = await fetch("http://localhost:8000/auth/logout", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
-      if (!response.ok) {
-        console.warn("Logout endpoint not found or failed:", response.statusText);
+        if (!response.ok) {
+          console.warn("Logout request failed:", response.statusText);
+        }
       }
-
-      // Clear token and user state even if logout endpoint fails
-      clearAuthData();
     } catch (error) {
       console.error("Logout error:", error);
-
-      // Fallback: Clear data if backend fails
+    } finally {
       clearAuthData();
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, setToken, setUser }}>
+    <AuthContext.Provider value={{ user, token, login, logout, setToken }}>
       {children}
     </AuthContext.Provider>
   );
