@@ -3,7 +3,6 @@ from datetime import date, datetime
 from typing import Optional, List
 from enum import Enum
 
-
 # --------------------------
 # Token Schemas
 # --------------------------
@@ -106,7 +105,7 @@ class ConsumptionBase(BaseModel):
 
 
 class ConsumptionCreate(ConsumptionBase):
-    pass  # Removed location_id field
+    pass
 
     class Config:
         populate_by_name = True
@@ -147,6 +146,10 @@ class MonthlyConsumptionHistoryResponse(BaseModel):
 class SpendingBase(BaseModel):
     date: date
     amount_spent: float = Field(..., alias="amountSpent", gt=0)
+    liters: float = Field(..., alias="liters", gt=0)
+    store: Optional[str] = Field(None, alias="store", max_length=100)
+    city: Optional[str] = Field(None, alias="city", max_length=50)
+    notes: Optional[str] = Field(None, alias="notes", max_length=255)
 
     class Config:
         populate_by_name = True
@@ -154,7 +157,7 @@ class SpendingBase(BaseModel):
 
 
 class SpendingCreate(SpendingBase):
-    location_id: Optional[int] = Field(None, alias="locationId")
+    pass
 
     class Config:
         populate_by_name = True
@@ -163,7 +166,6 @@ class SpendingCreate(SpendingBase):
 
 class SpendingResponse(SpendingBase):
     id: int
-    location_id: Optional[int] = Field(None, alias="locationId")
 
     class Config:
         populate_by_name = True

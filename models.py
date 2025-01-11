@@ -92,6 +92,10 @@ class SpendingEntry(Base):
     location_id = Column(Integer, ForeignKey("purchase_locations.id"), nullable=True)
     date = Column(Date, nullable=False)
     amount_spent = Column(Float, nullable=False)
+    liters = Column(Float, nullable=False)
+    store = Column(String, nullable=True)
+    city = Column(String, nullable=True)
+    notes = Column(String, nullable=True)
 
     # Timestamps
     created_at = Column(TIMESTAMP, server_default=func.now())
@@ -99,3 +103,9 @@ class SpendingEntry(Base):
     # Relationships
     user = relationship("User", back_populates="spending_entries")
     location = relationship("PurchaseLocation", back_populates="spending_entries")
+
+    # Constraints
+    __table_args__ = (
+        CheckConstraint("amount_spent > 0", name="check_amount_positive"),
+        CheckConstraint("liters > 0", name="check_liters_positive"),
+    )
