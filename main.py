@@ -103,6 +103,7 @@ def get_dashboard_metrics(db: Session = Depends(get_db), current_user: User = De
     try:
         today = date.today()
         start_of_week = today - timedelta(days=today.weekday())
+        start_of_year = date(today.year, 1, 1)
 
         # Today's Consumption
         today_consumption = db.query(func.sum(ConsumptionEntry.liters_consumed)).filter(
@@ -127,8 +128,14 @@ def get_dashboard_metrics(db: Session = Depends(get_db), current_user: User = De
         ).first()
 
         monthly_consumption = monthly_data.total or 0
-        monthly_average = round(monthly_consumption / monthly_data.unique_days,
-                                2) if monthly_data.unique_days > 0 else 0
+        monthly_average = round(monthly_consumption / monthly_data.unique_days, 2) if monthly_data.unique_days > 0 else 0
+
+        # Yearly Consumption
+        yearly_consumption = db.query(func.sum(ConsumptionEntry.liters_consumed)).filter(
+            ConsumptionEntry.date >= start_of_year,
+            ConsumptionEntry.date <= today,
+            ConsumptionEntry.user_id == current_user.id
+        ).scalar() or 0
 
         # Today's Spending
         today_spending = db.query(func.sum(SpendingEntry.amount_spent)).filter(
@@ -146,6 +153,13 @@ def get_dashboard_metrics(db: Session = Depends(get_db), current_user: User = De
         # Monthly Spending
         monthly_spending = db.query(func.sum(SpendingEntry.amount_spent)).filter(
             func.date_trunc('month', SpendingEntry.date) == func.date_trunc('month', today),
+            SpendingEntry.user_id == current_user.id
+        ).scalar() or 0
+
+        # Yearly Spending
+        yearly_spending = db.query(func.sum(SpendingEntry.amount_spent)).filter(
+            SpendingEntry.date >= start_of_year,
+            SpendingEntry.date <= today,
             SpendingEntry.user_id == current_user.id
         ).scalar() or 0
 
@@ -190,9 +204,11 @@ def get_dashboard_metrics(db: Session = Depends(get_db), current_user: User = De
             "weeklyConsumption": weekly_consumption,
             "monthlyConsumption": monthly_consumption,
             "monthlyAverage": monthly_average,
+            "yearlyConsumption": yearly_consumption,
             "todaySpending": today_spending,
             "weeklySpending": weekly_spending,
             "monthlySpending": monthly_spending,
+            "yearlySpending": yearly_spending,
             "highestConsumption": highest_consumption,
             "highestSpending": highest_spending,
             "weeklyTrends": weekly_trends,
@@ -268,6 +284,8 @@ def get_monthly_spending_history(
             func.max(SpendingEntry.amount_spent).label("highest_spending"),
             func.array_agg(SpendingEntry.date).label("dates"),
             func.array_agg(SpendingEntry.amount_spent).label("amounts"),
+            func.array_agg(SpendingEntry.store).label("stores"),
+            func.array_agg(SpendingEntry.city).label("cities"),
             func.array_agg(SpendingEntry.notes).label("notes"),
         ).filter(
             SpendingEntry.user_id == current_user.id
@@ -282,10 +300,12 @@ def get_monthly_spending_history(
                 {
                     "date": date.strftime("%Y-%m-%d"),
                     "amount_spent": amount,
+                    "store": store or "N/A",
+                    "city": city or "N/A",
                     "notes": notes or "N/A",
                 }
-                for date, amount, notes in zip(
-                    result.dates, result.amounts, result.notes
+                for date, amount, store, city, notes in zip(
+                    result.dates, result.amounts, result.stores, result.cities, result.notes
                 )
             ]
             highest_date = (
@@ -360,14 +380,16 @@ def add_spending_entry(
         )
 
     liters = spending.liters if spending.liters is not None else 0
+    store = spending.store if spending.store else "N/A"
+    city = spending.city if spending.city else "N/A"
 
     new_entry = SpendingEntry(
         user_id=current_user.id,
         date=spending.date,
         amount_spent=spending.amount_spent,
         liters=liters,
-        store=spending.store,
-        city=spending.city,
+        store=store,
+        city=city,
         notes=spending.notes,
     )
 

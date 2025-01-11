@@ -28,7 +28,7 @@ export default function Dashboard() {
   const [todayConsumption, setTodayConsumption] = useState(0);
   const [weeklyConsumption, setWeeklyConsumption] = useState(0);
   const [monthlyAverage, setMonthlyAverage] = useState(0);
-  const [totalConsumption, setTotalConsumption] = useState(0);
+  const [yearlyConsumption, setYearlyConsumption] = useState(0);
   const [highestConsumption, setHighestConsumption] = useState({
     date: null,
     liters: 0,
@@ -36,7 +36,7 @@ export default function Dashboard() {
   const [todaySpending, setTodaySpending] = useState(0);
   const [weeklySpending, setWeeklySpending] = useState(0);
   const [monthlySpending, setMonthlySpending] = useState(0);
-  const [totalSpending, setTotalSpending] = useState(0);
+  const [yearlySpending, setYearlySpending] = useState(0);
   const [highestSpending, setHighestSpending] = useState({
     date: null,
     amount: 0,
@@ -68,7 +68,7 @@ export default function Dashboard() {
       setTodayConsumption(data.todayConsumption || 0);
       setWeeklyConsumption(data.weeklyConsumption || 0);
       setMonthlyAverage(data.monthlyAverage || 0);
-      setTotalConsumption(data.totalConsumption || 0);
+      setYearlyConsumption(data.yearlyConsumption || 0);
       setHighestConsumption(
         data.highestConsumption?.liters
           ? {
@@ -81,7 +81,7 @@ export default function Dashboard() {
       setTodaySpending(data.todaySpending || 0);
       setWeeklySpending(data.weeklySpending || 0);
       setMonthlySpending(data.monthlySpending || 0);
-      setTotalSpending(data.totalSpending || 0);
+      setYearlySpending(data.yearlySpending || 0);
       setHighestSpending(
         data.highestSpending?.amount
           ? {
@@ -180,9 +180,9 @@ export default function Dashboard() {
               <Grid item xs={3}>
                 <Card elevation={4}>
                   <CardContent>
-                    <Typography variant="h6">Total Consumption</Typography>
+                    <Typography variant="h6">Yearly Consumption</Typography>
                     <Typography variant="h4" color="primary">
-                      {totalConsumption.toFixed(2)} L
+                      {yearlyConsumption.toFixed(2)} L
                     </Typography>
                   </CardContent>
                 </Card>
@@ -226,9 +226,9 @@ export default function Dashboard() {
               <Grid item xs={3}>
                 <Card elevation={4}>
                   <CardContent>
-                    <Typography variant="h6">Total Spending</Typography>
+                    <Typography variant="h6">Yearly Spending</Typography>
                     <Typography variant="h4" color="secondary">
-                      ${totalSpending.toFixed(2)}
+                      ${yearlySpending.toFixed(2)}
                     </Typography>
                   </CardContent>
                 </Card>
