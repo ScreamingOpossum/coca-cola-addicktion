@@ -117,11 +117,18 @@ def get_dashboard_metrics(db: Session = Depends(get_db), current_user: User = De
             ConsumptionEntry.user_id == current_user.id
         ).scalar() or 0
 
-        # Monthly Consumption
-        monthly_consumption = db.query(func.sum(ConsumptionEntry.liters_consumed)).filter(
+        # Monthly Consumption and Average
+        monthly_data = db.query(
+            func.sum(ConsumptionEntry.liters_consumed).label("total"),
+            func.count(func.distinct(ConsumptionEntry.date)).label("unique_days")
+        ).filter(
             func.date_trunc('month', ConsumptionEntry.date) == func.date_trunc('month', today),
             ConsumptionEntry.user_id == current_user.id
-        ).scalar() or 0
+        ).first()
+
+        monthly_consumption = monthly_data.total or 0
+        monthly_average = round(monthly_consumption / monthly_data.unique_days,
+                                2) if monthly_data.unique_days > 0 else 0
 
         # Today's Spending
         today_spending = db.query(func.sum(SpendingEntry.amount_spent)).filter(
@@ -182,6 +189,7 @@ def get_dashboard_metrics(db: Session = Depends(get_db), current_user: User = De
             "todayConsumption": today_consumption,
             "weeklyConsumption": weekly_consumption,
             "monthlyConsumption": monthly_consumption,
+            "monthlyAverage": monthly_average,
             "todaySpending": today_spending,
             "weeklySpending": weekly_spending,
             "monthlySpending": monthly_spending,
