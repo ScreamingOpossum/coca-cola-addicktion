@@ -34,7 +34,7 @@ logging.basicConfig(
     ],
 )
 logger = logging.getLogger(__name__)
-logger.info("Test log: Logging system is working.")
+logger.info("Logging system is working.")
 
 # Password hashing setup
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -205,7 +205,7 @@ def get_monthly_consumption_history(
         query = db.query(
             func.date_trunc("month", ConsumptionEntry.date).label("month"),
             func.sum(ConsumptionEntry.liters_consumed).label("total_consumption"),
-            func.avg(ConsumptionEntry.liters_consumed).label("average_daily_consumption"),
+            func.count(func.distinct(ConsumptionEntry.date)).label("unique_days"),
             func.max(ConsumptionEntry.liters_consumed).label("highest_consumption"),
             func.array_agg(ConsumptionEntry.date).label("dates"),
             func.array_agg(ConsumptionEntry.liters_consumed).label("liters"),
@@ -230,7 +230,7 @@ def get_monthly_consumption_history(
             response.append({
                 "month": month,
                 "total_consumption": result.total_consumption or 0,
-                "average_daily_consumption": round(result.average_daily_consumption, 2) if result.average_daily_consumption else 0,
+                "average_daily_consumption": round(result.total_consumption / result.unique_days, 2) if result.unique_days else 0,
                 "highest_consumption": {
                     "liters": result.highest_consumption or 0,
                     "date": highest_date,
@@ -256,7 +256,7 @@ def get_monthly_spending_history(
         query = db.query(
             func.date_trunc("month", SpendingEntry.date).label("month"),
             func.sum(SpendingEntry.amount_spent).label("total_spending"),
-            func.avg(SpendingEntry.amount_spent).label("average_daily_spending"),
+            func.count(func.distinct(SpendingEntry.date)).label("unique_days"),
             func.max(SpendingEntry.amount_spent).label("highest_spending"),
             func.array_agg(SpendingEntry.date).label("dates"),
             func.array_agg(SpendingEntry.amount_spent).label("amounts"),
@@ -287,7 +287,7 @@ def get_monthly_spending_history(
             response.append({
                 "month": month,
                 "total_spending": result.total_spending or 0,
-                "average_daily_spending": round(result.average_daily_spending, 2) if result.average_daily_spending else 0,
+                "average_daily_spending": round(result.total_spending / result.unique_days, 2) if result.unique_days else 0,
                 "highest_spending": {
                     "amount": result.highest_spending or 0,
                     "date": highest_date,
@@ -351,10 +351,15 @@ def add_spending_entry(
             status_code=400, detail="Amount spent must be a positive number"
         )
 
+    liters = spending.liters if spending.liters is not None else 0
+
     new_entry = SpendingEntry(
         user_id=current_user.id,
         date=spending.date,
         amount_spent=spending.amount_spent,
+        liters=liters,
+        store=spending.store,
+        city=spending.city,
         notes=spending.notes,
     )
 
@@ -367,5 +372,8 @@ def add_spending_entry(
         "id": new_entry.id,
         "date": new_entry.date,
         "amount_spent": new_entry.amount_spent,
+        "liters": new_entry.liters,
+        "store": new_entry.store,
+        "city": new_entry.city,
         "notes": new_entry.notes,
     }
