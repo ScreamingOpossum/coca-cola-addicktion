@@ -24,6 +24,8 @@ def create_refresh_token(data: dict):
 def decode_token(token: str):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        print(f"Decoded token payload: {payload}")  # Debug log
         return payload
-    except JWTError:
+    except JWTError as e:
+        print(f"JWT decoding error: {e}")  # Debug log
         raise ValueError("Invalid or expired token")

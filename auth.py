@@ -6,8 +6,10 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from database import SessionLocal
 from models import User
-import os
 from dotenv import load_dotenv
+import os
+
+# Import helper functions
 from auth_helpers import create_access_token, create_refresh_token, decode_token
 
 # Load environment variables
@@ -34,11 +36,15 @@ def get_db():
     finally:
         db.close()
 
+# API Router for Authentication
 auth_router = APIRouter()
 
 # Login Endpoint
 @auth_router.post("/auth/login")
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    """
+    Handles user login by generating access and refresh tokens.
+    """
     user = db.query(User).filter(User.email == form_data.username).first()
     if not user or not verify_password(form_data.password, user.password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
@@ -57,7 +63,7 @@ def refresh_token(refresh_token: str = Body(...), db: Session = Depends(get_db))
     Refresh the access token using a valid refresh token.
     """
     try:
-        payload = jwt.decode(refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = decode_token(refresh_token)  # Use helper function
         user_id: str = payload.get("sub")
         if not user_id:
             raise HTTPException(status_code=401, detail="Invalid refresh token")
@@ -68,45 +74,46 @@ def refresh_token(refresh_token: str = Body(...), db: Session = Depends(get_db))
 
         new_access_token = create_access_token(data={"sub": user_id})
         return {"access_token": new_access_token, "token_type": "bearer"}
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid refresh token")
+    except ValueError as e:
+        raise HTTPException(status_code=401, detail=str(e))
 
 # Verify Password
 def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """
+    Verifies a plain text password against a hashed password.
+    """
     return pwd_context.verify(plain_password, hashed_password)
 
 # Hash Password
 def get_password_hash(password: str) -> str:
+    """
+    Hashes a plain text password.
+    """
     return pwd_context.hash(password)
 
 # Authenticate User
 def authenticate_user(db: Session, email: str, password: str) -> User:
+    """
+    Authenticate a user by email and password.
+    """
     user = db.query(User).filter(User.email == email).first()
     if not user or not verify_password(password, user.password):
         return None
     return user
 
-# Create Access Token
-def create_access_token(data: dict):
-    to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-
 # Create Access and Refresh Tokens
 def create_tokens(data: dict) -> dict:
-    access_token_exp = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    refresh_token_exp = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
-
-    access_token = jwt.encode({"exp": access_token_exp, **data}, SECRET_KEY, algorithm=ALGORITHM)
-    refresh_token = jwt.encode({"exp": refresh_token_exp, **data}, SECRET_KEY, algorithm=ALGORITHM)
-
+    """
+    Generate access and refresh tokens.
+    """
+    access_token = create_access_token(data)
+    refresh_token = create_refresh_token(data)
     return {"access_token": access_token, "refresh_token": refresh_token}
 
-# Decode and Verify Token
+# Get Current User from Token
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
     """
-    Extract and validate the current user from the token.
+    Extracts and validates the current user from the token.
     """
     credentials_exception = HTTPException(
         status_code=401,
@@ -114,11 +121,11 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = decode_token(token)  # Use helper function
         user_id: str = payload.get("sub")
         if not user_id:
             raise credentials_exception
-    except JWTError:
+    except ValueError as e:
         raise credentials_exception
 
     user = db.query(User).filter(User.id == int(user_id)).first()
@@ -128,6 +135,9 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 
 # Exception Handling for Credentials
 def handle_credentials_exception() -> HTTPException:
+    """
+    Returns a 401 exception for invalid credentials.
+    """
     return HTTPException(
         status_code=401,
         detail="Invalid or expired token. Please log in again.",

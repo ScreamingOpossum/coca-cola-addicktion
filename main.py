@@ -23,8 +23,6 @@ from sqlalchemy import func, desc
 import logging
 from auth import auth_router
 
-
-
 # Initialize FastAPI app
 app = FastAPI()
 app.include_router(auth_router)
@@ -102,23 +100,18 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     db.refresh(new_user)
     return new_user
 
-# Get User Profile
+# Get user profile
 @app.get("/user/profile", response_model=UserProfileResponse)
 def get_user_profile(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     today = date.today()
-
-    # Calculate current month's consumption
-    monthly_data = db.query(func.sum(ConsumptionEntry.liters_consumed).label("total")).filter(
-        func.date_trunc('month', ConsumptionEntry.date) == func.date_trunc('month', today),
+    monthly_data = db.query(func.sum(ConsumptionEntry.liters_consumed)).filter(
+        func.date_trunc("month", ConsumptionEntry.date) == func.date_trunc("month", today),
         ConsumptionEntry.user_id == current_user.id
     ).first()
 
-    current_month_consumption = monthly_data.total or 0
-
-    # Build profile response
     profile = {
         "id": current_user.id,
         "first_name": current_user.first_name,
@@ -126,25 +119,25 @@ def get_user_profile(
         "email": current_user.email,
         "date_of_birth": current_user.date_of_birth,
         "monthly_goal": current_user.monthly_goal,
-        "current_month_consumption": current_month_consumption,
+        "current_month_consumption": monthly_data[0] or 0.0,
     }
 
+    logger.info(f"Fetched profile: {profile}")
     return profile
 
-# Update User Profile
+# Update user profile
 @app.put("/user/profile", response_model=UserProfileResponse)
 def update_user_profile(
     user_update: UserProfileUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    # Update only editable fields
     for field, value in user_update.dict(exclude_unset=True).items():
-        if field == "email":
-            continue  # Email should not be updated
         setattr(current_user, field, value)
     db.commit()
     db.refresh(current_user)
+
+    logger.info(f"Updated profile for user {current_user.id}")
     return current_user
 
 # Dashboard metrics endpoint

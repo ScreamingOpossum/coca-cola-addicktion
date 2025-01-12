@@ -19,6 +19,8 @@ export const AuthProvider = ({ children }) => {
       setToken(savedToken);
       setUser(JSON.parse(savedUser));
       setAuthToken(savedToken); // Set token in Axios headers
+    } else {
+      console.log("AuthContext: No token or user found in localStorage");
     }
   }, []);
 
@@ -27,20 +29,25 @@ export const AuthProvider = ({ children }) => {
     if (token) {
       localStorage.setItem("token", token);
       setAuthToken(token); // Ensure Axios has the token
+      console.log("AuthContext: Token updated in localStorage and Axios headers");
     } else {
       localStorage.removeItem("token");
       setAuthToken(null); // Clear Axios token
+      console.log("AuthContext: Token cleared from localStorage and Axios headers");
     }
 
     if (user) {
       localStorage.setItem("user", JSON.stringify(user));
+      console.log("AuthContext: User updated in localStorage");
     } else {
       localStorage.removeItem("user");
+      console.log("AuthContext: User cleared from localStorage");
     }
   }, [token, user]);
 
   // Clear authentication data
   const clearAuthData = useCallback(() => {
+    console.log("AuthContext: Clearing authentication data...");
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setToken(null);
@@ -49,14 +56,35 @@ export const AuthProvider = ({ children }) => {
     navigate("/login");
   }, [navigate]);
 
+  // Fetch user profile (to ensure data consistency)
+  const fetchUserProfile = useCallback(async () => {
+    try {
+      const response = await api.get("/user/profile");
+      setUser(response.data); // Update user state with fresh profile data
+      console.log("AuthContext: Fetched user profile:", response.data);
+    } catch (error) {
+      console.error("AuthContext: Error fetching user profile:", error);
+      clearAuthData(); // Clear data if the profile fetch fails
+    }
+  }, [clearAuthData]);
+
   // Handle login
   const login = useCallback(
-    ({ access_token, user }) => {
+    async ({ access_token, user }) => {
       setToken(access_token);
       setUser(user);
+      setAuthToken(access_token); // Set token in Axios headers
       navigate("/dashboard");
+      console.log("AuthContext: User logged in:", user);
+
+      // Optionally fetch fresh user profile after login
+      try {
+        await fetchUserProfile();
+      } catch (error) {
+        console.error("AuthContext: Failed to fetch user profile after login");
+      }
     },
-    [navigate]
+    [navigate, fetchUserProfile]
   );
 
   // Handle logout
@@ -64,16 +92,17 @@ export const AuthProvider = ({ children }) => {
     try {
       if (token) {
         await api.post("/auth/logout"); // Call logout API endpoint
+        console.log("AuthContext: Successfully logged out from server");
       }
     } catch (error) {
-      console.error("Logout error:", error);
+      console.error("AuthContext: Logout error:", error);
     } finally {
       clearAuthData(); // Always clear session data
     }
   }, [token, clearAuthData]);
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider value={{ user, token, login, logout, fetchUserProfile }}>
       {children}
     </AuthContext.Provider>
   );
