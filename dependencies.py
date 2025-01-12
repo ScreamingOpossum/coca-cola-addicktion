@@ -14,6 +14,7 @@ ALGORITHM = "HS256"
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
+
 # Get database session
 def get_db():
     db = SessionLocal()

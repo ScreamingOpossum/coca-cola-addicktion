@@ -126,17 +126,18 @@ const Login = () => {
           </Button>
         </Box>
 
+        {/* Links to Register and Forgot Password */}
         <Box mt={2}>
           <Typography>
             Don't have an account?{" "}
-            <Link to="/register" className="link">
-              Register
+            <Link to="/register" style={{ textDecoration: "none", color: "#1976d2" }}>
+              Register here
             </Link>
           </Typography>
           <Typography sx={{ mt: 1 }}>
             Forgot your password?{" "}
-            <Link to="/forgotpassword" className="link">
-              Reset Password
+            <Link to="/forgotpassword" style={{ textDecoration: "none", color: "#1976d2" }}>
+              Reset it here
             </Link>
           </Typography>
         </Box>
@@ -153,6 +154,7 @@ const Login = () => {
         "It's not an addiction until you've sucked d___ for it."
       </Typography>
 
+      {/* Snackbar for Error Messages */}
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={3000}

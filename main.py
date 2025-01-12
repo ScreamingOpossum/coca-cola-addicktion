@@ -2,7 +2,17 @@ from fastapi import FastAPI, Depends, HTTPException, Request, Body
 from sqlalchemy.orm import Session
 from database import SessionLocal
 from models import User, RoleEnum, ConsumptionEntry, SpendingEntry
-from schemas import Token, UserCreate, UserResponse, ConsumptionCreate, ConsumptionResponse, SpendingCreate, SpendingResponse
+from schemas import (
+    Token,
+    UserCreate,
+    UserResponse,
+    ConsumptionCreate,
+    ConsumptionResponse,
+    SpendingCreate,
+    SpendingResponse,
+    UserProfileResponse,
+    UserProfileUpdate,
+)
 from passlib.context import CryptContext
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
@@ -11,10 +21,13 @@ from dependencies import get_db
 from datetime import date, timedelta
 from sqlalchemy import func, desc
 import logging
+from auth import auth_router
+
+
 
 # Initialize FastAPI app
 app = FastAPI()
-
+app.include_router(auth_router)
 # Enable CORS for frontend communication
 app.add_middleware(
     CORSMiddleware,
@@ -34,18 +47,9 @@ logging.basicConfig(
     ],
 )
 logger = logging.getLogger(__name__)
-logger.info("Logging system is working.")
+logger.info("Logging system initialized.")
 
-# Password hashing setup
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-# Middleware to log incoming requests
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    logger.info(f"Incoming Request: {request.method} {request.url}")
-    response = await call_next(request)
-    logger.info(f"Response Status: {response.status_code}")
-    return response
 
 # Dependency to get database session
 def get_db():
@@ -55,31 +59,34 @@ def get_db():
     finally:
         db.close()
 
-# User login endpoint
+
+# Middleware to log requests
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger.info(f"Request: {request.method} {request.url}")
+    response = await call_next(request)
+    logger.info(f"Response: {response.status_code}")
+    return response
+
+# User Login
 @app.post("/auth/login", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    logger.info(f"Login attempt for username: {form_data.username}")
     user = authenticate_user(db, form_data.username, form_data.password)
     if not user:
-        raise HTTPException(status_code=401, detail="Incorrect email or password")
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    token = create_access_token({"sub": str(user.id)})
+    return {"access_token": token, "token_type": "bearer"}
 
-    access_token = create_access_token(data={"sub": str(user.id)})
-    logger.info(f"Login successful for username: {form_data.username}")
-    return {"access_token": access_token, "token_type": "bearer"}
+# User Logout
+@app.post("/auth/logout")
+def logout():
+    return {"message": "Logout successful"}
 
-# User logout endpoint
-@app.post("/auth/logout", status_code=200)
-def logout(current_user: User = Depends(get_current_user)):
-    logger.info(f"Logout request for user ID: {current_user.id}")
-    return {"message": "Logged out successfully"}
-
-# User registration endpoint
-@app.post("/auth/register", response_model=UserResponse, status_code=201)
-def register_user(user: UserCreate, db: Session = Depends(get_db)):
-    logger.info(f"Register Request: {user.email}")
+# User Registration
+@app.post("/auth/register", response_model=UserResponse)
+def register(user: UserCreate, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == user.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
-
     hashed_password = pwd_context.hash(user.password)
     new_user = User(
         first_name=user.first_name,
@@ -93,8 +100,52 @@ def register_user(user: UserCreate, db: Session = Depends(get_db)):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    logger.info(f"User registered successfully: {user.email}")
     return new_user
+
+# Get User Profile
+@app.get("/user/profile", response_model=UserProfileResponse)
+def get_user_profile(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    today = date.today()
+
+    # Calculate current month's consumption
+    monthly_data = db.query(func.sum(ConsumptionEntry.liters_consumed).label("total")).filter(
+        func.date_trunc('month', ConsumptionEntry.date) == func.date_trunc('month', today),
+        ConsumptionEntry.user_id == current_user.id
+    ).first()
+
+    current_month_consumption = monthly_data.total or 0
+
+    # Build profile response
+    profile = {
+        "id": current_user.id,
+        "first_name": current_user.first_name,
+        "last_name": current_user.last_name,
+        "email": current_user.email,
+        "date_of_birth": current_user.date_of_birth,
+        "monthly_goal": current_user.monthly_goal,
+        "current_month_consumption": current_month_consumption,
+    }
+
+    return profile
+
+# Update User Profile
+@app.put("/user/profile", response_model=UserProfileResponse)
+def update_user_profile(
+    user_update: UserProfileUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    # Update only editable fields
+    for field, value in user_update.dict(exclude_unset=True).items():
+        if field == "email":
+            continue  # Email should not be updated
+        setattr(current_user, field, value)
+    db.commit()
+    db.refresh(current_user)
+    return current_user
 
 # Dashboard metrics endpoint
 @app.get("/dashboard")

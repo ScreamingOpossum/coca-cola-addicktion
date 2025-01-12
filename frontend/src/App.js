@@ -34,15 +34,20 @@ const routes = [
 ];
 
 function App() {
-  const { token, setToken, logout } = useContext(AuthContext);
+  const { token, login, logout } = useContext(AuthContext);
 
   // Persist Authentication
   useEffect(() => {
     const savedToken = localStorage.getItem("token");
-    if (savedToken && !token) {
-      setToken(savedToken);
+    const savedUser = localStorage.getItem("user");
+
+    if (savedToken && savedUser && !token) {
+      login({
+        access_token: savedToken,
+        user: JSON.parse(savedUser),
+      });
     }
-  }, [token, setToken]);
+  }, [token, login]);
 
   // Auto Logout on Token Expiration
   useEffect(() => {
@@ -51,7 +56,8 @@ function App() {
       const timer = setTimeout(() => {
         logout();
       }, tokenExpirationTime);
-      return () => clearTimeout(timer);
+
+      return () => clearTimeout(timer); // Cleanup timer on unmount or token change
     }
   }, [token, logout]);
 
@@ -59,7 +65,7 @@ function App() {
     <div className="app-container">
       {/* Sidebar visible only if authenticated */}
       {token && <Sidebar />}
-      <div className="content">
+      <div className={token ? "content with-sidebar" : "content"}>
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Navigate to="/login" replace />} />

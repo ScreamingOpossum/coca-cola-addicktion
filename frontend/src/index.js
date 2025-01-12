@@ -7,11 +7,15 @@ import App from "./App";
 // Debug Logs
 console.log("App started");
 
+// Root setup with StrictMode for debugging and modern React practices
 const root = ReactDOM.createRoot(document.getElementById("root"));
+
 root.render(
+  <React.StrictMode>
     <BrowserRouter>
-        <AuthProvider>
-            <App />
-        </AuthProvider>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
     </BrowserRouter>
+  </React.StrictMode>
 );

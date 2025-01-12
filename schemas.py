@@ -41,17 +41,8 @@ class UserBase(BaseModel):
         from_attributes = True
 
 
-class UserCreate(BaseModel):
-    first_name: str = Field(..., alias="firstName", min_length=1, max_length=50)
-    last_name: str = Field(..., alias="lastName", min_length=1, max_length=50)
-    email: EmailStr
+class UserCreate(UserBase):
     password: str = Field(..., min_length=8)
-    date_of_birth: date = Field(..., alias="dateOfBirth")
-    monthly_goal: Optional[float] = Field(None, alias="monthlyGoal", gt=0)
-
-    class Config:
-        populate_by_name = True
-        from_attributes = True
 
 
 class UserResponse(UserBase):
@@ -63,6 +54,21 @@ class UserResponse(UserBase):
         populate_by_name = True
         from_attributes = True
         json_encoders = {datetime: lambda v: v.date().isoformat()}
+
+
+class UserProfileResponse(BaseModel):
+    id: int
+    first_name: str
+    last_name: str
+    email: str
+    date_of_birth: date
+    monthly_goal: float
+    current_month_consumption: float
+
+class UserProfileUpdate(BaseModel):
+    first_name: Optional[str]
+    last_name: Optional[str]
+    monthly_goal: Optional[float]
 
 
 # --------------------------
@@ -107,17 +113,9 @@ class ConsumptionBase(BaseModel):
 class ConsumptionCreate(ConsumptionBase):
     pass
 
-    class Config:
-        populate_by_name = True
-        from_attributes = True
-
 
 class ConsumptionResponse(ConsumptionBase):
     id: int
-
-    class Config:
-        populate_by_name = True
-        from_attributes = True
 
 
 class MonthlyConsumptionResponse(BaseModel):
@@ -126,17 +124,9 @@ class MonthlyConsumptionResponse(BaseModel):
     average_daily_consumption: float
     highest_consumption: Optional[dict]
 
-    class Config:
-        populate_by_name = True
-        from_attributes = True
-
 
 class MonthlyConsumptionHistoryResponse(BaseModel):
     data: List[MonthlyConsumptionResponse]
-
-    class Config:
-        populate_by_name = True
-        from_attributes = True
 
 
 # --------------------------
@@ -159,14 +149,6 @@ class SpendingBase(BaseModel):
 class SpendingCreate(SpendingBase):
     pass
 
-    class Config:
-        populate_by_name = True
-        from_attributes = True
-
 
 class SpendingResponse(SpendingBase):
     id: int
-
-    class Config:
-        populate_by_name = True
-        from_attributes = True
