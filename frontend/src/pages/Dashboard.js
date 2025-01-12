@@ -30,7 +30,7 @@ export default function Dashboard() {
   const [monthlyAverage, setMonthlyAverage] = useState(0);
   const [yearlyConsumption, setYearlyConsumption] = useState(0);
   const [highestConsumption, setHighestConsumption] = useState({
-    date: null,
+    date: "N/A",
     liters: 0,
   });
   const [todaySpending, setTodaySpending] = useState(0);
@@ -38,7 +38,7 @@ export default function Dashboard() {
   const [monthlySpending, setMonthlySpending] = useState(0);
   const [yearlySpending, setYearlySpending] = useState(0);
   const [highestSpending, setHighestSpending] = useState({
-    date: null,
+    date: "N/A",
     amount: 0,
   });
   const [weeklyTrends, setWeeklyTrends] = useState([]);
@@ -65,31 +65,28 @@ export default function Dashboard() {
 
       const data = response.data;
 
+      // Log response for debugging
+      console.log("Dashboard data:", data);
+
       setTodayConsumption(data.todayConsumption || 0);
       setWeeklyConsumption(data.weeklyConsumption || 0);
       setMonthlyAverage(data.monthlyAverage || 0);
       setYearlyConsumption(data.yearlyConsumption || 0);
-      setHighestConsumption(
-        data.highestConsumption?.liters
-          ? {
-              liters: data.highestConsumption.liters,
-              date: data.highestConsumption.date || "N/A",
-            }
-          : { liters: 0, date: "N/A" }
-      );
+
+      setHighestConsumption({
+        liters: data.highestConsumption?.liters || 0,
+        date: data.highestConsumption?.date || "N/A",
+      });
 
       setTodaySpending(data.todaySpending || 0);
       setWeeklySpending(data.weeklySpending || 0);
       setMonthlySpending(data.monthlySpending || 0);
       setYearlySpending(data.yearlySpending || 0);
-      setHighestSpending(
-        data.highestSpending?.amount
-          ? {
-              amount: data.highestSpending.amount,
-              date: data.highestSpending.date || "N/A",
-            }
-          : { amount: 0, date: "N/A" }
-      );
+
+      setHighestSpending({
+        amount: data.highestSpending?.amount || 0,
+        date: data.highestSpending?.date || "N/A",
+      });
 
       setWeeklyTrends(data.weeklyTrends || []);
 
@@ -143,6 +140,7 @@ export default function Dashboard() {
       ) : (
         <>
           <Grid container spacing={3}>
+            {/* Consumption and Spending Cards */}
             <Grid item xs={12} container spacing={3}>
               <Grid item xs={3}>
                 <Card elevation={4}>
@@ -235,6 +233,7 @@ export default function Dashboard() {
               </Grid>
             </Grid>
 
+            {/* Highest Records */}
             <Grid item xs={12} container spacing={3}>
               <Grid item xs={6}>
                 <Card elevation={4}>
@@ -264,6 +263,7 @@ export default function Dashboard() {
             </Grid>
           </Grid>
 
+          {/* Weekly Trends */}
           <Grid container spacing={3} sx={{ mt: 3 }}>
             <Grid item xs={12}>
               <Card elevation={4}>

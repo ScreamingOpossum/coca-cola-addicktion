@@ -64,7 +64,9 @@ export const AuthProvider = ({ children }) => {
       console.log("AuthContext: Fetched user profile:", response.data);
     } catch (error) {
       console.error("AuthContext: Error fetching user profile:", error);
-      clearAuthData(); // Clear data if the profile fetch fails
+      if (error.response?.status === 401) {
+        clearAuthData(); // Clear data if the profile fetch fails due to auth issues
+      }
     }
   }, [clearAuthData]);
 
@@ -74,8 +76,9 @@ export const AuthProvider = ({ children }) => {
       setToken(access_token);
       setUser(user);
       setAuthToken(access_token); // Set token in Axios headers
-      navigate("/dashboard");
       console.log("AuthContext: User logged in:", user);
+
+      navigate("/dashboard");
 
       // Optionally fetch fresh user profile after login
       try {
@@ -101,8 +104,29 @@ export const AuthProvider = ({ children }) => {
     }
   }, [token, clearAuthData]);
 
+  // Update user profile in state
+  const updateUserProfile = useCallback(
+    (updatedUser) => {
+      setUser((prevUser) => ({
+        ...prevUser,
+        ...updatedUser,
+      }));
+      console.log("AuthContext: User profile updated in context:", updatedUser);
+    },
+    [setUser]
+  );
+
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, fetchUserProfile }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        login,
+        logout,
+        fetchUserProfile,
+        updateUserProfile,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

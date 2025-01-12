@@ -12,6 +12,7 @@ from schemas import (
     SpendingResponse,
     UserProfileResponse,
     UserProfileUpdate,
+    UserUpdateSchema,
 )
 from passlib.context import CryptContext
 from fastapi.middleware.cors import CORSMiddleware
@@ -126,119 +127,200 @@ def get_user_profile(
     return profile
 
 # Update user profile
-@app.put("/user/profile", response_model=UserProfileResponse)
+@app.put("/user/profile", response_model=UserUpdateSchema)
 def update_user_profile(
-    user_update: UserProfileUpdate,
+    user_update: UserUpdateSchema,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    for field, value in user_update.dict(exclude_unset=True).items():
-        setattr(current_user, field, value)
-    db.commit()
-    db.refresh(current_user)
+    try:
+        # Re-fetch the user object in the same session
+        user = db.query(User).filter(User.id == current_user.id).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
 
-    logger.info(f"Updated profile for user {current_user.id}")
-    return current_user
+        # Update fields
+        user.first_name = user_update.first_name
+        user.last_name = user_update.last_name
+        user.monthly_goal = user_update.monthly_goal
+        user.date_of_birth = user_update.date_of_birth
+
+        # Commit the changes
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+        return user
+    except Exception as e:
+        db.rollback()
+        print(f"Error updating profile: {e}")
+        raise HTTPException(status_code=500, detail="Internal Server Error")
 
 # Dashboard metrics endpoint
 @app.get("/dashboard")
-def get_dashboard_metrics(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    logger.info(f"Fetching dashboard metrics for user: {current_user.id}")
+def get_dashboard_metrics(
+    db: Session = Depends(get_db), current_user: User = Depends(get_current_user)
+):
     try:
         today = date.today()
-        start_of_week = today - timedelta(days=today.weekday())
+        start_of_week = today - timedelta(days=today.weekday())  # Monday
         start_of_year = date(today.year, 1, 1)
 
         # Today's Consumption
-        today_consumption = db.query(func.sum(ConsumptionEntry.liters_consumed)).filter(
-            ConsumptionEntry.date == today,
-            ConsumptionEntry.user_id == current_user.id
-        ).scalar() or 0
+        today_consumption = (
+            db.query(func.sum(ConsumptionEntry.liters_consumed))
+            .filter(
+                ConsumptionEntry.date == today,
+                ConsumptionEntry.user_id == current_user.id,
+            )
+            .scalar()
+            or 0
+        )
 
         # Weekly Consumption
-        weekly_consumption = db.query(func.sum(ConsumptionEntry.liters_consumed)).filter(
-            ConsumptionEntry.date >= start_of_week,
-            ConsumptionEntry.date <= today,
-            ConsumptionEntry.user_id == current_user.id
-        ).scalar() or 0
+        weekly_consumption = (
+            db.query(func.sum(ConsumptionEntry.liters_consumed))
+            .filter(
+                ConsumptionEntry.date >= start_of_week,
+                ConsumptionEntry.date <= today,
+                ConsumptionEntry.user_id == current_user.id,
+            )
+            .scalar()
+            or 0
+        )
 
-        # Monthly Consumption and Average
-        monthly_data = db.query(
-            func.sum(ConsumptionEntry.liters_consumed).label("total"),
-            func.count(func.distinct(ConsumptionEntry.date)).label("unique_days")
-        ).filter(
-            func.date_trunc('month', ConsumptionEntry.date) == func.date_trunc('month', today),
-            ConsumptionEntry.user_id == current_user.id
-        ).first()
-
-        monthly_consumption = monthly_data.total or 0
-        monthly_average = round(monthly_consumption / monthly_data.unique_days, 2) if monthly_data.unique_days > 0 else 0
+        # Monthly Average Consumption
+        monthly_data = (
+            db.query(
+                func.sum(ConsumptionEntry.liters_consumed).label("total"),
+                func.count(func.distinct(ConsumptionEntry.date)).label("unique_days"),
+            )
+            .filter(
+                func.date_trunc("month", ConsumptionEntry.date)
+                == func.date_trunc("month", today),
+                ConsumptionEntry.user_id == current_user.id,
+            )
+            .first()
+        )
+        monthly_average = (
+            (monthly_data.total or 0) / monthly_data.unique_days
+            if monthly_data and monthly_data.unique_days > 0
+            else 0
+        )
 
         # Yearly Consumption
-        yearly_consumption = db.query(func.sum(ConsumptionEntry.liters_consumed)).filter(
-            ConsumptionEntry.date >= start_of_year,
-            ConsumptionEntry.date <= today,
-            ConsumptionEntry.user_id == current_user.id
-        ).scalar() or 0
-
-        # Today's Spending
-        today_spending = db.query(func.sum(SpendingEntry.amount_spent)).filter(
-            SpendingEntry.date == today,
-            SpendingEntry.user_id == current_user.id
-        ).scalar() or 0
-
-        # Weekly Spending
-        weekly_spending = db.query(func.sum(SpendingEntry.amount_spent)).filter(
-            SpendingEntry.date >= start_of_week,
-            SpendingEntry.date <= today,
-            SpendingEntry.user_id == current_user.id
-        ).scalar() or 0
-
-        # Monthly Spending
-        monthly_spending = db.query(func.sum(SpendingEntry.amount_spent)).filter(
-            func.date_trunc('month', SpendingEntry.date) == func.date_trunc('month', today),
-            SpendingEntry.user_id == current_user.id
-        ).scalar() or 0
-
-        # Yearly Spending
-        yearly_spending = db.query(func.sum(SpendingEntry.amount_spent)).filter(
-            SpendingEntry.date >= start_of_year,
-            SpendingEntry.date <= today,
-            SpendingEntry.user_id == current_user.id
-        ).scalar() or 0
+        yearly_consumption = (
+            db.query(func.sum(ConsumptionEntry.liters_consumed))
+            .filter(
+                ConsumptionEntry.date >= start_of_year,
+                ConsumptionEntry.date <= today,
+                ConsumptionEntry.user_id == current_user.id,
+            )
+            .scalar()
+            or 0
+        )
 
         # Highest Consumption
-        highest_consumption_entry = db.query(ConsumptionEntry).filter(
-            ConsumptionEntry.user_id == current_user.id
-        ).order_by(ConsumptionEntry.liters_consumed.desc()).first()
-
+        highest_consumption_entry = (
+            db.query(ConsumptionEntry)
+            .filter(ConsumptionEntry.user_id == current_user.id)
+            .order_by(ConsumptionEntry.liters_consumed.desc())
+            .first()
+        )
         highest_consumption = {
-            "liters": highest_consumption_entry.liters_consumed if highest_consumption_entry else 0,
-            "date": highest_consumption_entry.date.strftime('%Y-%m-%d') if highest_consumption_entry else "N/A",
+            "liters": highest_consumption_entry.liters_consumed
+            if highest_consumption_entry
+            else 0,
+            "date": highest_consumption_entry.date.strftime("%Y-%m-%d")
+            if highest_consumption_entry
+            else "N/A",
         }
 
-        # Highest Spending
-        highest_spending_entry = db.query(SpendingEntry).filter(
-            SpendingEntry.user_id == current_user.id
-        ).order_by(SpendingEntry.amount_spent.desc()).first()
+        # Today's Spending
+        today_spending = (
+            db.query(func.sum(SpendingEntry.amount_spent))
+            .filter(
+                SpendingEntry.date == today,
+                SpendingEntry.user_id == current_user.id,
+            )
+            .scalar()
+            or 0
+        )
 
+        # Weekly Spending
+        weekly_spending = (
+            db.query(func.sum(SpendingEntry.amount_spent))
+            .filter(
+                SpendingEntry.date >= start_of_week,
+                SpendingEntry.date <= today,
+                SpendingEntry.user_id == current_user.id,
+            )
+            .scalar()
+            or 0
+        )
+
+        # Monthly Spending
+        monthly_spending = (
+            db.query(func.sum(SpendingEntry.amount_spent))
+            .filter(
+                func.date_trunc("month", SpendingEntry.date)
+                == func.date_trunc("month", today),
+                SpendingEntry.user_id == current_user.id,
+            )
+            .scalar()
+            or 0
+        )
+
+        # Yearly Spending
+        yearly_spending = (
+            db.query(func.sum(SpendingEntry.amount_spent))
+            .filter(
+                SpendingEntry.date >= start_of_year,
+                SpendingEntry.date <= today,
+                SpendingEntry.user_id == current_user.id,
+            )
+            .scalar()
+            or 0
+        )
+
+        # Highest Spending
+        highest_spending_entry = (
+            db.query(SpendingEntry)
+            .filter(SpendingEntry.user_id == current_user.id)
+            .order_by(SpendingEntry.amount_spent.desc())
+            .first()
+        )
         highest_spending = {
-            "amount": highest_spending_entry.amount_spent if highest_spending_entry else 0,
-            "date": highest_spending_entry.date.strftime('%Y-%m-%d') if highest_spending_entry else "N/A",
+            "amount": highest_spending_entry.amount_spent
+            if highest_spending_entry
+            else 0,
+            "date": highest_spending_entry.date.strftime("%Y-%m-%d")
+            if highest_spending_entry
+            else "N/A",
         }
 
         # Weekly Trends
         weekly_trends = [
             {
                 "name": (start_of_week + timedelta(days=i)).strftime("%A"),
-                "liters": db.query(func.sum(ConsumptionEntry.liters_consumed)).filter(
-                    ConsumptionEntry.date == (start_of_week + timedelta(days=i)),
-                    ConsumptionEntry.user_id == current_user.id
-                ).scalar() or 0,
-                "amount": db.query(func.sum(SpendingEntry.amount_spent)).filter(
-                    SpendingEntry.date == (start_of_week + timedelta(days=i)),
-                    SpendingEntry.user_id == current_user.id
-                ).scalar() or 0,
+                "liters": (
+                    db.query(func.sum(ConsumptionEntry.liters_consumed))
+                    .filter(
+                        ConsumptionEntry.date == (start_of_week + timedelta(days=i)),
+                        ConsumptionEntry.user_id == current_user.id,
+                    )
+                    .scalar()
+                    or 0
+                ),
+                "amount": (
+                    db.query(func.sum(SpendingEntry.amount_spent))
+                    .filter(
+                        SpendingEntry.date == (start_of_week + timedelta(days=i)),
+                        SpendingEntry.user_id == current_user.id,
+                    )
+                    .scalar()
+                    or 0
+                ),
             }
             for i in range(7)
         ]
@@ -246,21 +328,21 @@ def get_dashboard_metrics(db: Session = Depends(get_db), current_user: User = De
         return {
             "todayConsumption": today_consumption,
             "weeklyConsumption": weekly_consumption,
-            "monthlyConsumption": monthly_consumption,
             "monthlyAverage": monthly_average,
             "yearlyConsumption": yearly_consumption,
+            "highestConsumption": highest_consumption,
             "todaySpending": today_spending,
             "weeklySpending": weekly_spending,
             "monthlySpending": monthly_spending,
             "yearlySpending": yearly_spending,
-            "highestConsumption": highest_consumption,
             "highestSpending": highest_spending,
             "weeklyTrends": weekly_trends,
         }
 
     except Exception as e:
-        logger.error(f"Error fetching dashboard metrics: {e}", exc_info=True)
+        logger.error(f"Error fetching dashboard metrics: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch dashboard metrics")
+
 
 # Fetch monthly consumption data
 @app.get("/consumption/history")

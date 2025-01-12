@@ -70,6 +70,15 @@ class UserProfileUpdate(BaseModel):
     last_name: Optional[str]
     monthly_goal: Optional[float]
 
+class UserUpdateSchema(BaseModel):
+    first_name: Optional[str]
+    last_name: Optional[str]
+    monthly_goal: Optional[int]
+    date_of_birth: Optional[date]
+
+    class Config:
+        orm_mode = True
+
 
 # --------------------------
 # Location Schemas

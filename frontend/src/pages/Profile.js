@@ -15,7 +15,7 @@ import { AuthContext } from "../context/AuthContext";
 import api from "../utils/api";
 
 const Profile = () => {
-  const { user, updateUserProfile } = useContext(AuthContext);
+  const { user, updateUserProfile, fetchUserProfile } = useContext(AuthContext);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -26,7 +26,11 @@ const Profile = () => {
   });
 
   const [consumptionProgress, setConsumptionProgress] = useState(0);
-  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
   // Load user data into the form and calculate progress bar
   useEffect(() => {
@@ -76,9 +80,21 @@ const Profile = () => {
 
       updateUserProfile(response.data);
 
-      setSnackbar({ open: true, message: "Profile updated successfully!", severity: "success" });
+      setSnackbar({
+        open: true,
+        message: "Profile updated successfully!",
+        severity: "success",
+      });
+
+      // Fetch the latest user profile to ensure data consistency
+      await fetchUserProfile();
     } catch (error) {
-      setSnackbar({ open: true, message: "Failed to update profile. Please try again.", severity: "error" });
+      console.error("Profile Update Error:", error);
+      setSnackbar({
+        open: true,
+        message: "Failed to update profile. Please try again.",
+        severity: "error",
+      });
     }
   };
 
