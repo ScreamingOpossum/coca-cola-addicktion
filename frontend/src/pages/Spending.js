@@ -170,13 +170,13 @@ const Spending = () => {
             {month.month}
           </Typography>
           <Typography variant="subtitle1">
-            Total Spending: {month.total_spending || "N/A"} USD
+            Total Spending: {month.total_spending || "N/A"} Br
           </Typography>
           <Typography variant="subtitle1">
-            Average Daily Spending: {month.average_daily_spending?.toFixed(2) || "N/A"} USD
+            Average Daily Spending: {month.average_daily_spending?.toFixed(2) || "N/A"} Br
           </Typography>
           <Typography variant="subtitle1">
-            Highest Spending: {month.highest_spending.amount || "N/A"} USD on{" "}
+            Highest Spending: {month.highest_spending.amount || "N/A"} Br on{" "}
             {month.highest_spending.date || "N/A"}
           </Typography>
           <TableContainer component={Paper} sx={{ mt: 2 }}>
@@ -196,7 +196,7 @@ const Spending = () => {
                   <TableRow key={entryIndex}>
                     <TableCell>{entry.date}</TableCell>
                     <TableCell>{entry.liters || "N/A"}</TableCell>
-                    <TableCell>{entry.amount_spent || "N/A"} USD</TableCell>
+                    <TableCell>{entry.amount_spent || "N/A"} Br</TableCell>
                     <TableCell>{entry.store || "N/A"}</TableCell>
                     <TableCell>{entry.city || "N/A"}</TableCell>
                     <TableCell>{entry.notes || "N/A"}</TableCell>

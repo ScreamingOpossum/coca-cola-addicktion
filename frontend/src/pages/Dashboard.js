@@ -202,7 +202,7 @@ export default function Dashboard() {
                   <CardContent>
                     <Typography variant="h6">Today’s Spending</Typography>
                     <Typography variant="h4" color="secondary">
-                      ${todaySpending.toFixed(2)}
+                      {todaySpending.toFixed(2)} Br
                     </Typography>
                   </CardContent>
                 </Card>
@@ -213,7 +213,7 @@ export default function Dashboard() {
                   <CardContent>
                     <Typography variant="h6">Weekly Spending</Typography>
                     <Typography variant="h4" color="secondary">
-                      ${weeklySpending.toFixed(2)}
+                      {weeklySpending.toFixed(2)} Br
                     </Typography>
                   </CardContent>
                 </Card>
@@ -224,7 +224,7 @@ export default function Dashboard() {
                   <CardContent>
                     <Typography variant="h6">Monthly Spending</Typography>
                     <Typography variant="h4" color="secondary">
-                      ${monthlySpending.toFixed(2)}
+                      {monthlySpending.toFixed(2)} Br
                     </Typography>
                   </CardContent>
                 </Card>
@@ -235,7 +235,7 @@ export default function Dashboard() {
                   <CardContent>
                     <Typography variant="h6">Yearly Spending</Typography>
                     <Typography variant="h4" color="secondary">
-                      ${yearlySpending.toFixed(2)}
+                      {yearlySpending.toFixed(2)} Br
                     </Typography>
                   </CardContent>
                 </Card>
@@ -263,7 +263,7 @@ export default function Dashboard() {
                     <Typography variant="h6">Highest Spending</Typography>
                     <Typography variant="body1">
                       {highestSpending.amount
-                        ? `$${highestSpending.amount.toFixed(2)} on ${highestSpending.date}`
+                        ? `${highestSpending.amount.toFixed(2)} Br on ${highestSpending.date}`
                         : "N/A"}
                     </Typography>
                   </CardContent>
@@ -303,7 +303,7 @@ export default function Dashboard() {
                           yAxisId="right"
                           orientation="right"
                           label={{
-                            value: "$ Spent",
+                            value: "Br Spent",
                             angle: -90,
                             position: "insideRight",
                           }}
