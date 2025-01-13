@@ -18,8 +18,11 @@ import {
   TableRow,
   Paper,
   Snackbar,
+  Pagination,
 } from "@mui/material";
 import axios from "axios";
+
+const ITEMS_PER_PAGE = 8;
 
 const Consumption = () => {
   const [openForm, setOpenForm] = useState(false);
@@ -30,22 +33,20 @@ const Consumption = () => {
     litersConsumed: "",
     notes: "",
   });
-  const [monthlyData, setMonthlyData] = useState([]);
+  const [monthlyData, setMonthlyData] = useState([]); // Stores monthly data
+  const [paginationStates, setPaginationStates] = useState({}); // Pagination state for each month
 
-  // Open and close the add consumption dialog
   const handleOpenForm = () => setOpenForm(true);
   const handleCloseForm = () => {
     setOpenForm(false);
     setError(null);
   };
 
-  // Handle form data change
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Fetch monthly consumption data
   const fetchMonthlyData = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
@@ -61,28 +62,28 @@ const Consumption = () => {
         },
       });
 
-      setMonthlyData(
-        response.data.data.map((month) => ({
-          ...month,
-          highest_consumption:
-            month.highest_consumption?.liters && month.highest_consumption?.date
-              ? `${month.highest_consumption.liters} L on ${month.highest_consumption.date}`
-              : "N/A",
-        }))
-      );
+      const data = response.data.data || [];
+      const initialPaginationStates = {};
+
+      data.forEach((month, index) => {
+        const totalPages = Math.ceil((month.entries || []).length / ITEMS_PER_PAGE);
+        initialPaginationStates[index] = { currentPage: 1, totalPages };
+      });
+
+      setMonthlyData(data);
+      setPaginationStates(initialPaginationStates);
       setError(null);
     } catch (err) {
-      console.error("Failed to fetch monthly history:", err);
+      console.error("Failed to fetch monthly consumption history:", err);
       setError(
-        err.response?.data?.detail || "Failed to fetch monthly history. Please try again."
+        err.response?.data?.detail || "Failed to fetch monthly consumption history. Please try again."
       );
     }
   }, []);
 
-  // Handle form submission to add consumption
   const handleSubmit = async () => {
     if (!formData.date || !formData.litersConsumed) {
-      setError("All fields are required.");
+      setError("Date and Liters Consumed are required fields.");
       return;
     }
 
@@ -124,19 +125,28 @@ const Consumption = () => {
       fetchMonthlyData();
     } catch (err) {
       console.error("Failed to add consumption entry:", err);
-
       setError(
         err.response?.data?.detail || "Failed to add consumption entry. Please try again."
       );
     }
   };
 
-  // Handle success notification close
   const handleCloseSuccess = () => {
     setSuccess(false);
   };
 
-  // Fetch data on component mount
+  const handlePageChange = (monthIndex, event, value) => {
+    setPaginationStates((prev) => ({
+      ...prev,
+      [monthIndex]: { ...prev[monthIndex], currentPage: value },
+    }));
+  };
+
+  const getPaginatedEntries = (entries, currentPage) => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return entries.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  };
+
   useEffect(() => {
     fetchMonthlyData();
   }, [fetchMonthlyData]);
@@ -168,45 +178,57 @@ const Consumption = () => {
         Add Consumption
       </Button>
 
-      {/* Monthly History */}
-      {monthlyData.map((month, index) => (
-        <Box key={index} sx={{ mt: 4 }}>
-          <Typography variant="h5" gutterBottom>
-            {month.month}
-          </Typography>
-          <Typography variant="subtitle1">
-            Total Consumption: {month.total_consumption} L
-          </Typography>
-          <Typography variant="subtitle1">
-            Average Daily Consumption: {month.average_daily_consumption.toFixed(2)} L
-          </Typography>
-          <Typography variant="subtitle1">
-            Highest Consumption: {month.highest_consumption}
-          </Typography>
-          <TableContainer component={Paper} sx={{ mt: 2 }}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Date</TableCell>
-                  <TableCell>Liters Consumed</TableCell>
-                  <TableCell>Notes</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {(month.entries || []).map((entry, entryIndex) => (
-                  <TableRow key={entryIndex}>
-                    <TableCell>{entry.date}</TableCell>
-                    <TableCell>{entry.liters_consumed}</TableCell>
-                    <TableCell>{entry.notes || "N/A"}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Box>
-      ))}
+      {monthlyData.map((month, index) => {
+        const currentPage = paginationStates[index]?.currentPage || 1;
+        const paginatedEntries = getPaginatedEntries(month.entries || [], currentPage);
 
-      {/* Pop-up Form */}
+        return (
+          <Box key={index} sx={{ mt: 4 }}>
+            <Typography variant="h5" gutterBottom>
+              {month.month}
+            </Typography>
+            <Typography variant="subtitle1">
+              Total Consumption: {month.total_consumption || "N/A"} L
+            </Typography>
+            <Typography variant="subtitle1">
+              Average Daily Consumption: {month.average_daily_consumption?.toFixed(2) || "N/A"} L
+            </Typography>
+            <Typography variant="subtitle1">
+              Highest Consumption: {month.highest_consumption.liters || "N/A"} L on{" "}
+              {month.highest_consumption.date || "N/A"}
+            </Typography>
+            <TableContainer component={Paper} sx={{ mt: 2 }}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Date</TableCell>
+                    <TableCell>Liters Consumed</TableCell>
+                    <TableCell>Notes</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {paginatedEntries.map((entry, entryIndex) => (
+                    <TableRow key={entryIndex}>
+                      <TableCell>{entry.date}</TableCell>
+                      <TableCell>{entry.liters_consumed || "N/A"}</TableCell>
+                      <TableCell>{entry.notes || "N/A"}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+              <Pagination
+                count={paginationStates[index]?.totalPages || 1}
+                page={paginationStates[index]?.currentPage || 1}
+                onChange={(event, value) => handlePageChange(index, event, value)}
+                color="primary"
+              />
+            </Box>
+          </Box>
+        );
+      })}
+
       <Dialog open={openForm} onClose={handleCloseForm}>
         <DialogTitle>Add Consumption</DialogTitle>
         <DialogContent>
@@ -250,7 +272,6 @@ const Consumption = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Success Snackbar */}
       <Snackbar
         open={success}
         autoHideDuration={3000}

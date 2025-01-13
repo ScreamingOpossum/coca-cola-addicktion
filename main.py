@@ -23,6 +23,7 @@ from datetime import date, timedelta
 from sqlalchemy import func, desc
 import logging
 from auth import auth_router
+from fastapi import Query
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -347,9 +348,13 @@ def get_dashboard_metrics(
 def get_monthly_consumption_history(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    page: int = Query(1, ge=1),  # Page number (default is 1)
+    limit: int = Query(8, ge=1),  # Items per page (default is 8)
 ):
-    logger.info(f"Fetching monthly consumption history for user: {current_user.id}")
+    logger.info(f"Fetching paginated consumption history for user: {current_user.id}")
     try:
+        offset = (page - 1) * limit  # Calculate the offset for pagination
+
         query = db.query(
             func.date_trunc("month", ConsumptionEntry.date).label("month"),
             func.sum(ConsumptionEntry.liters_consumed).label("total_consumption"),
@@ -362,10 +367,15 @@ def get_monthly_consumption_history(
             ConsumptionEntry.user_id == current_user.id
         ).group_by(
             func.date_trunc("month", ConsumptionEntry.date)
-        ).order_by(desc("month")).all()
+        ).order_by(
+            desc("month")
+        )
+
+        total_entries = query.count()  # Total records for pagination
+        paginated_query = query.offset(offset).limit(limit).all()
 
         response = []
-        for result in query:
+        for result in paginated_query:
             month = result.month.strftime("%B %Y") if result.month else "Unknown"
             entries = [
                 {"date": date.strftime("%Y-%m-%d"), "liters_consumed": liters, "notes": notes or "N/A"}
@@ -386,11 +396,12 @@ def get_monthly_consumption_history(
                 "entries": entries,
             })
 
-        logger.info(f"Monthly consumption history fetched successfully for user: {current_user.id}")
-        return {"data": response}
+        total_pages = (total_entries + limit - 1) // limit  # Calculate total pages
+
+        return {"data": response, "total_pages": total_pages}
 
     except Exception as e:
-        logger.error(f"Error fetching monthly consumption history for user {current_user.id}: {e}")
+        logger.error(f"Error fetching paginated consumption history for user {current_user.id}: {e}")
         raise HTTPException(status_code=500, detail="An error occurred while fetching consumption history")
 
 # Fetch monthly spending data
@@ -398,17 +409,22 @@ def get_monthly_consumption_history(
 def get_monthly_spending_history(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    page: int = Query(1, ge=1),  # Page number (default is 1)
+    limit: int = Query(8, ge=1),  # Items per page (default is 8)
 ):
-    logger.info(f"Fetching monthly spending history for user: {current_user.id}")
+    logger.info(f"Fetching paginated spending history for user: {current_user.id}")
     try:
+        offset = (page - 1) * limit  # Calculate the offset for pagination
+
         query = db.query(
             func.date_trunc("month", SpendingEntry.date).label("month"),
             func.sum(SpendingEntry.amount_spent).label("total_spending"),
+            func.sum(SpendingEntry.liters).label("total_liters"),  # Total liters
             func.count(func.distinct(SpendingEntry.date)).label("unique_days"),
             func.max(SpendingEntry.amount_spent).label("highest_spending"),
             func.array_agg(SpendingEntry.date).label("dates"),
             func.array_agg(SpendingEntry.amount_spent).label("amounts"),
-            func.array_agg(SpendingEntry.liters).label("liters"),  # Include liters
+            func.array_agg(SpendingEntry.liters).label("liters"),  # Aggregate liters
             func.array_agg(SpendingEntry.store).label("stores"),
             func.array_agg(SpendingEntry.city).label("cities"),
             func.array_agg(SpendingEntry.notes).label("notes"),
@@ -416,16 +432,19 @@ def get_monthly_spending_history(
             SpendingEntry.user_id == current_user.id
         ).group_by(
             func.date_trunc("month", SpendingEntry.date)
-        ).order_by(desc("month")).all()
+        ).order_by(desc("month"))
+
+        total_entries = query.count()  # Total records for pagination
+        paginated_query = query.offset(offset).limit(limit).all()
 
         response = []
-        for result in query:
+        for result in paginated_query:
             month = result.month.strftime("%B %Y") if result.month else "Unknown"
             entries = [
                 {
                     "date": date.strftime("%Y-%m-%d"),
                     "amount_spent": amount,
-                    "liters": liters,  # Add liters to entries
+                    "liters": liters or 0,
                     "store": store or "N/A",
                     "city": city or "N/A",
                     "notes": notes or "N/A",
@@ -441,6 +460,7 @@ def get_monthly_spending_history(
             response.append({
                 "month": month,
                 "total_spending": result.total_spending or 0,
+                "total_liters": result.total_liters or 0,  # Include total liters for the month
                 "average_daily_spending": round(result.total_spending / result.unique_days, 2) if result.unique_days else 0,
                 "highest_spending": {
                     "amount": result.highest_spending or 0,
@@ -449,11 +469,12 @@ def get_monthly_spending_history(
                 "entries": entries,
             })
 
-        logger.info(f"Monthly spending history fetched successfully for user: {current_user.id}")
-        return {"data": response}
+        total_pages = (total_entries + limit - 1) // limit  # Calculate total pages
+
+        return {"data": response, "total_pages": total_pages}
 
     except Exception as e:
-        logger.error(f"Error fetching monthly spending history for user {current_user.id}: {e}")
+        logger.error(f"Error fetching paginated spending history for user {current_user.id}: {e}")
         raise HTTPException(status_code=500, detail="An error occurred while fetching spending history")
 
 # Add consumption entry

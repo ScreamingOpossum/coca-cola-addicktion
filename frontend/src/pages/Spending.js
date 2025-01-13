@@ -18,8 +18,11 @@ import {
   TableRow,
   Paper,
   Snackbar,
+  Pagination,
 } from "@mui/material";
 import axios from "axios";
+
+const ITEMS_PER_PAGE = 8;
 
 const Spending = () => {
   const [openForm, setOpenForm] = useState(false);
@@ -33,7 +36,8 @@ const Spending = () => {
     city: "",
     notes: "",
   });
-  const [monthlyData, setMonthlyData] = useState([]);
+  const [monthlyData, setMonthlyData] = useState([]); // Stores monthly data
+  const [paginationStates, setPaginationStates] = useState({}); // Pagination state for each month
 
   const handleOpenForm = () => setOpenForm(true);
   const handleCloseForm = () => {
@@ -61,9 +65,16 @@ const Spending = () => {
         },
       });
 
-      console.log("API Response Data:", response.data);
+      const data = response.data.data || [];
+      const initialPaginationStates = {};
 
-      setMonthlyData(response.data.data);
+      data.forEach((month, index) => {
+        const totalPages = Math.ceil((month.entries || []).length / ITEMS_PER_PAGE);
+        initialPaginationStates[index] = { currentPage: 1, totalPages };
+      });
+
+      setMonthlyData(data);
+      setPaginationStates(initialPaginationStates);
       setError(null);
     } catch (err) {
       console.error("Failed to fetch monthly spending history:", err);
@@ -133,6 +144,18 @@ const Spending = () => {
     setSuccess(false);
   };
 
+  const handlePageChange = (monthIndex, event, value) => {
+    setPaginationStates((prev) => ({
+      ...prev,
+      [monthIndex]: { ...prev[monthIndex], currentPage: value },
+    }));
+  };
+
+  const getPaginatedEntries = (entries, currentPage) => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return entries.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  };
+
   useEffect(() => {
     fetchMonthlyData();
   }, [fetchMonthlyData]);
@@ -164,49 +187,62 @@ const Spending = () => {
         Add Spending
       </Button>
 
-      {monthlyData.map((month, index) => (
-        <Box key={index} sx={{ mt: 4 }}>
-          <Typography variant="h5" gutterBottom>
-            {month.month}
-          </Typography>
-          <Typography variant="subtitle1">
-            Total Spending: {month.total_spending || "N/A"} Br
-          </Typography>
-          <Typography variant="subtitle1">
-            Average Daily Spending: {month.average_daily_spending?.toFixed(2) || "N/A"} Br
-          </Typography>
-          <Typography variant="subtitle1">
-            Highest Spending: {month.highest_spending.amount || "N/A"} Br on{" "}
-            {month.highest_spending.date || "N/A"}
-          </Typography>
-          <TableContainer component={Paper} sx={{ mt: 2 }}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Date</TableCell>
-                  <TableCell>Liters</TableCell>
-                  <TableCell>Amount Spent</TableCell>
-                  <TableCell>Store</TableCell>
-                  <TableCell>City</TableCell>
-                  <TableCell>Notes</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {(month.entries || []).map((entry, entryIndex) => (
-                  <TableRow key={entryIndex}>
-                    <TableCell>{entry.date}</TableCell>
-                    <TableCell>{entry.liters || "N/A"}</TableCell>
-                    <TableCell>{entry.amount_spent || "N/A"} Br</TableCell>
-                    <TableCell>{entry.store || "N/A"}</TableCell>
-                    <TableCell>{entry.city || "N/A"}</TableCell>
-                    <TableCell>{entry.notes || "N/A"}</TableCell>
+      {monthlyData.map((month, index) => {
+        const currentPage = paginationStates[index]?.currentPage || 1;
+        const paginatedEntries = getPaginatedEntries(month.entries || [], currentPage);
+
+        return (
+          <Box key={index} sx={{ mt: 4 }}>
+            <Typography variant="h5" gutterBottom>
+              {month.month}
+            </Typography>
+            <Typography variant="subtitle1">
+              Total Spending: {month.total_spending || "N/A"} Br
+            </Typography>
+            <Typography variant="subtitle1">
+              Average Daily Spending: {month.average_daily_spending?.toFixed(2) || "N/A"} Br
+            </Typography>
+            <Typography variant="subtitle1">
+              Highest Spending: {month.highest_spending.amount || "N/A"} Br on{" "}
+              {month.highest_spending.date || "N/A"}
+            </Typography>
+            <TableContainer component={Paper} sx={{ mt: 2 }}>
+              <Table>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Date</TableCell>
+                    <TableCell>Liters</TableCell>
+                    <TableCell>Amount Spent</TableCell>
+                    <TableCell>Store</TableCell>
+                    <TableCell>City</TableCell>
+                    <TableCell>Notes</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Box>
-      ))}
+                </TableHead>
+                <TableBody>
+                  {paginatedEntries.map((entry, entryIndex) => (
+                    <TableRow key={entryIndex}>
+                      <TableCell>{entry.date}</TableCell>
+                      <TableCell>{entry.liters || "N/A"}</TableCell>
+                      <TableCell>{entry.amount_spent || "N/A"} Br</TableCell>
+                      <TableCell>{entry.store || "N/A"}</TableCell>
+                      <TableCell>{entry.city || "N/A"}</TableCell>
+                      <TableCell>{entry.notes || "N/A"}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+              <Pagination
+                count={paginationStates[index]?.totalPages || 1}
+                page={paginationStates[index]?.currentPage || 1}
+                onChange={(event, value) => handlePageChange(index, event, value)}
+                color="primary"
+              />
+            </Box>
+          </Box>
+        );
+      })}
 
       <Dialog open={openForm} onClose={handleCloseForm}>
         <DialogTitle>Add Spending</DialogTitle>
