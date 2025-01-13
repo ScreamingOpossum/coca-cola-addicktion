@@ -61,8 +61,6 @@ const Consumption = () => {
         },
       });
 
-      console.log("Fetched monthly data:", response.data.data);
-
       setMonthlyData(
         response.data.data.map((month) => ({
           ...month,
@@ -75,7 +73,6 @@ const Consumption = () => {
       setError(null);
     } catch (err) {
       console.error("Failed to fetch monthly history:", err);
-
       setError(
         err.response?.data?.detail || "Failed to fetch monthly history. Please try again."
       );
@@ -102,7 +99,7 @@ const Consumption = () => {
         return;
       }
 
-      const response = await axios.post(
+      await axios.post(
         "http://127.0.0.1:8000/consumption",
         {
           date: formData.date,
@@ -115,8 +112,6 @@ const Consumption = () => {
           },
         }
       );
-
-      console.log("Consumption entry added:", response.data);
 
       setFormData({
         date: new Date().toISOString().split("T")[0],
@@ -153,14 +148,17 @@ const Consumption = () => {
         flexGrow: 1,
         p: 3,
         marginLeft: "250px",
-        width: "calc(100% - 250px)",
+        minHeight: "100vh",
+        overflowY: "auto",
       }}
     >
       <Toolbar />
       <Typography variant="h4" gutterBottom>
         Consumption
       </Typography>
-      <Typography>Track and manage Coca-Cola consumption data.</Typography>
+      <Typography variant="subtitle1" gutterBottom>
+        Track and manage Coca-Cola consumption data.
+      </Typography>
       <Button
         variant="contained"
         color="primary"
@@ -257,7 +255,7 @@ const Consumption = () => {
         open={success}
         autoHideDuration={3000}
         onClose={handleCloseSuccess}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       >
         <Alert onClose={handleCloseSuccess} severity="success" sx={{ width: "100%" }}>
           New consumption record added successfully!

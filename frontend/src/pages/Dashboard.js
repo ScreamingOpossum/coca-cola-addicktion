@@ -22,9 +22,10 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 export default function Dashboard() {
-  const theme = useTheme();
-  const navigate = useNavigate();
+  const theme = useTheme(); // Access theme for consistent styling
+  const navigate = useNavigate(); // Navigation hook for redirecting
 
+  // State variables to store dashboard metrics
   const [todayConsumption, setTodayConsumption] = useState(0);
   const [weeklyConsumption, setWeeklyConsumption] = useState(0);
   const [monthlyAverage, setMonthlyAverage] = useState(0);
@@ -43,24 +44,27 @@ export default function Dashboard() {
     amount: 0,
   });
 
-  const [weeklyTrends, setWeeklyTrends] = useState([]);
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [weeklyTrends, setWeeklyTrends] = useState([]); // Weekly trends data for charts
+  const [error, setError] = useState(null); // To handle errors
+  const [loading, setLoading] = useState(true); // To manage loading state
 
+  // Fetch dashboard data from the API
   const fetchDashboardData = useCallback(async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("token"); // Retrieve token from localStorage
 
+      // Redirect to login if no token is found
       if (!token) {
         setError("Authentication token is missing. Please log in.");
         navigate("/login");
         return;
       }
 
+      // Fetch dashboard metrics from the API
       const response = await axios.get("http://127.0.0.1:8000/dashboard", {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${token}`, // Include token in headers
         },
       });
 
@@ -69,6 +73,7 @@ export default function Dashboard() {
       // Log response for debugging
       console.log("Dashboard data:", data);
 
+      // Update state variables with fetched data
       setTodayConsumption(data.todayConsumption || 0);
       setWeeklyConsumption(data.weeklyConsumption || 0);
       setMonthlyAverage(data.monthlyAverage || 0);
@@ -91,20 +96,22 @@ export default function Dashboard() {
 
       setWeeklyTrends(data.weeklyTrends || []);
 
-      setError(null);
+      setError(null); // Clear any previous errors
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
       setError("Failed to fetch dashboard data. Please try again later.");
 
+      // Redirect to login if unauthorized
       if (err.response?.status === 401) {
         localStorage.removeItem("token");
         navigate("/login");
       }
     } finally {
-      setLoading(false);
+      setLoading(false); // Stop loading state
     }
   }, [navigate]);
 
+  // Fetch dashboard data on component mount
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);
@@ -115,7 +122,7 @@ export default function Dashboard() {
       sx={{
         flexGrow: 1,
         p: 3,
-        marginLeft: "250px",
+        marginLeft: "250px", // Account for sidebar width
         minHeight: "100vh",
         overflowY: "auto",
         backgroundColor: theme.palette.background.default,
@@ -126,20 +133,22 @@ export default function Dashboard() {
         Dashboard
       </Typography>
 
+      {/* Display error if any */}
       {error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
         </Alert>
       )}
 
+      {/* Show loading indicator */}
       {loading ? (
         <Typography variant="h6" align="center">
           Loading dashboard data...
         </Typography>
       ) : (
         <>
+          {/* Consumption Metrics */}
           <Grid container spacing={3}>
-            {/* Consumption Metrics */}
             <Grid item xs={12} container spacing={3}>
               <Grid item xs={3}>
                 <Card elevation={4}>
@@ -263,6 +272,7 @@ export default function Dashboard() {
             </Grid>
           </Grid>
 
+          {/* Weekly Trends Chart */}
           <Grid container spacing={3} sx={{ mt: 3 }}>
             <Grid item xs={12}>
               <Card elevation={4}>
@@ -283,12 +293,20 @@ export default function Dashboard() {
                         <XAxis dataKey="name" />
                         <YAxis
                           yAxisId="left"
-                          label={{ value: "Liters", angle: -90, position: "insideLeft" }}
+                          label={{
+                            value: "Liters",
+                            angle: -90,
+                            position: "insideLeft",
+                          }}
                         />
                         <YAxis
                           yAxisId="right"
                           orientation="right"
-                          label={{ value: "$ Spent", angle: -90, position: "insideRight" }}
+                          label={{
+                            value: "$ Spent",
+                            angle: -90,
+                            position: "insideRight",
+                          }}
                         />
                         <Tooltip />
                         <Line

@@ -35,20 +35,17 @@ const Spending = () => {
   });
   const [monthlyData, setMonthlyData] = useState([]);
 
-  // Open and close the add spending dialog
   const handleOpenForm = () => setOpenForm(true);
   const handleCloseForm = () => {
     setOpenForm(false);
     setError(null);
   };
 
-  // Handle form data change
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Fetch monthly spending data
   const fetchMonthlyData = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
@@ -64,28 +61,18 @@ const Spending = () => {
         },
       });
 
-      console.log("Fetched monthly data:", response.data.data);
+      console.log("API Response Data:", response.data);
 
-      setMonthlyData(
-        response.data.data.map((month) => ({
-          ...month,
-          highest_spending:
-            month.highest_spending?.amount && month.highest_spending?.date
-              ? `${month.highest_spending.amount} USD on ${month.highest_spending.date}`
-              : "N/A",
-        }))
-      );
+      setMonthlyData(response.data.data);
       setError(null);
     } catch (err) {
-      console.error("Failed to fetch monthly history:", err);
-
+      console.error("Failed to fetch monthly spending history:", err);
       setError(
-        err.response?.data?.detail || "Failed to fetch monthly history. Please try again."
+        err.response?.data?.detail || "Failed to fetch monthly spending history. Please try again."
       );
     }
   }, []);
 
-  // Handle form submission to add spending
   const handleSubmit = async () => {
     if (!formData.date || !formData.amountSpent || !formData.liters) {
       setError("Date, Liters, and Amount Spent are required fields.");
@@ -105,7 +92,7 @@ const Spending = () => {
         return;
       }
 
-      const response = await axios.post(
+      await axios.post(
         "http://127.0.0.1:8000/spending",
         {
           date: formData.date,
@@ -122,8 +109,6 @@ const Spending = () => {
         }
       );
 
-      console.log("Spending entry added:", response.data);
-
       setFormData({
         date: new Date().toISOString().split("T")[0],
         liters: "",
@@ -138,19 +123,16 @@ const Spending = () => {
       fetchMonthlyData();
     } catch (err) {
       console.error("Failed to add spending entry:", err);
-
       setError(
         err.response?.data?.detail || "Failed to add spending entry. Please try again."
       );
     }
   };
 
-  // Handle success notification close
   const handleCloseSuccess = () => {
     setSuccess(false);
   };
 
-  // Fetch data on component mount
   useEffect(() => {
     fetchMonthlyData();
   }, [fetchMonthlyData]);
@@ -162,14 +144,17 @@ const Spending = () => {
         flexGrow: 1,
         p: 3,
         marginLeft: "250px",
-        width: "calc(100% - 250px)",
+        minHeight: "100vh",
+        overflowY: "auto",
       }}
     >
       <Toolbar />
       <Typography variant="h4" gutterBottom>
         Spending
       </Typography>
-      <Typography>Track and manage Coca-Cola spending data.</Typography>
+      <Typography variant="subtitle1" gutterBottom>
+        Track and manage Coca-Cola spending data.
+      </Typography>
       <Button
         variant="contained"
         color="primary"
@@ -179,20 +164,20 @@ const Spending = () => {
         Add Spending
       </Button>
 
-      {/* Monthly History */}
       {monthlyData.map((month, index) => (
         <Box key={index} sx={{ mt: 4 }}>
           <Typography variant="h5" gutterBottom>
             {month.month}
           </Typography>
           <Typography variant="subtitle1">
-            Total Spending: {month.total_spending} USD
+            Total Spending: {month.total_spending || "N/A"} USD
           </Typography>
           <Typography variant="subtitle1">
-            Average Daily Spending: {month.average_daily_spending.toFixed(2)} USD
+            Average Daily Spending: {month.average_daily_spending?.toFixed(2) || "N/A"} USD
           </Typography>
           <Typography variant="subtitle1">
-            Highest Spending: {month.highest_spending}
+            Highest Spending: {month.highest_spending.amount || "N/A"} USD on{" "}
+            {month.highest_spending.date || "N/A"}
           </Typography>
           <TableContainer component={Paper} sx={{ mt: 2 }}>
             <Table>
@@ -210,8 +195,8 @@ const Spending = () => {
                 {(month.entries || []).map((entry, entryIndex) => (
                   <TableRow key={entryIndex}>
                     <TableCell>{entry.date}</TableCell>
-                    <TableCell>{entry.liters}</TableCell>
-                    <TableCell>{entry.amount_spent} USD</TableCell>
+                    <TableCell>{entry.liters || "N/A"}</TableCell>
+                    <TableCell>{entry.amount_spent || "N/A"} USD</TableCell>
                     <TableCell>{entry.store || "N/A"}</TableCell>
                     <TableCell>{entry.city || "N/A"}</TableCell>
                     <TableCell>{entry.notes || "N/A"}</TableCell>
@@ -223,7 +208,6 @@ const Spending = () => {
         </Box>
       ))}
 
-      {/* Pop-up Form */}
       <Dialog open={openForm} onClose={handleCloseForm}>
         <DialogTitle>Add Spending</DialogTitle>
         <DialogContent>
@@ -292,12 +276,11 @@ const Spending = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Success Snackbar */}
       <Snackbar
         open={success}
         autoHideDuration={3000}
         onClose={handleCloseSuccess}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       >
         <Alert onClose={handleCloseSuccess} severity="success" sx={{ width: "100%" }}>
           New spending record added successfully!

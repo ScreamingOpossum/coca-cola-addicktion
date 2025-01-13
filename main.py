@@ -408,6 +408,7 @@ def get_monthly_spending_history(
             func.max(SpendingEntry.amount_spent).label("highest_spending"),
             func.array_agg(SpendingEntry.date).label("dates"),
             func.array_agg(SpendingEntry.amount_spent).label("amounts"),
+            func.array_agg(SpendingEntry.liters).label("liters"),  # Include liters
             func.array_agg(SpendingEntry.store).label("stores"),
             func.array_agg(SpendingEntry.city).label("cities"),
             func.array_agg(SpendingEntry.notes).label("notes"),
@@ -424,12 +425,13 @@ def get_monthly_spending_history(
                 {
                     "date": date.strftime("%Y-%m-%d"),
                     "amount_spent": amount,
+                    "liters": liters,  # Add liters to entries
                     "store": store or "N/A",
                     "city": city or "N/A",
                     "notes": notes or "N/A",
                 }
-                for date, amount, store, city, notes in zip(
-                    result.dates, result.amounts, result.stores, result.cities, result.notes
+                for date, amount, liters, store, city, notes in zip(
+                    result.dates, result.amounts, result.liters, result.stores, result.cities, result.notes
                 )
             ]
             highest_date = (
