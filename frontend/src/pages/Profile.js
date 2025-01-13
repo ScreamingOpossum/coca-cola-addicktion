@@ -26,6 +26,7 @@ const Profile = () => {
   });
 
   const [consumptionProgress, setConsumptionProgress] = useState(0);
+  const [progressColor, setProgressColor] = useState("lightgreen");
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -58,7 +59,17 @@ const Profile = () => {
 
   const calculateProgressBar = (goal, currentConsumption) => {
     const progress = goal > 0 ? (currentConsumption / goal) * 100 : 0;
-    setConsumptionProgress(progress > 100 ? 100 : progress);
+    setConsumptionProgress(progress);
+
+    // Update color based on thresholds
+    let color = "lightgreen";
+    if (progress > 100) color = "darkred";
+    else if (progress >= 90) color = "red";
+    else if (progress >= 75) color = "orange";
+    else if (progress >= 50) color = "yellow";
+    else if (progress >= 25) color = "green";
+
+    setProgressColor(color);
   };
 
   const handleChange = (e) => {
@@ -128,13 +139,13 @@ const Profile = () => {
             <Tooltip title={`${(user?.current_month_consumption || 0).toFixed(2)} L`} arrow>
               <LinearProgress
                 variant="determinate"
-                value={consumptionProgress}
+                value={Math.min(consumptionProgress, 100)} // Cap progress visually at 100%
                 sx={{
                   height: 25,
                   borderRadius: 5,
                   backgroundColor: "#e0e0e0",
                   "& .MuiLinearProgress-bar": {
-                    backgroundColor: consumptionProgress >= 100 ? "darkred" : "lightgreen",
+                    backgroundColor: progressColor,
                   },
                 }}
               />
@@ -147,7 +158,7 @@ const Profile = () => {
                 left: "50%",
                 transform: "translate(-50%, -50%)",
                 fontWeight: "bold",
-                color: consumptionProgress >= 100 ? "white" : "black",
+                color: progressColor === "darkred" ? "white" : "black",
               }}
             >
               {`${consumptionProgress.toFixed(2)}%`}
