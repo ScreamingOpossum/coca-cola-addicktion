@@ -33,6 +33,7 @@ export default function Dashboard() {
     date: "N/A",
     liters: 0,
   });
+
   const [todaySpending, setTodaySpending] = useState(0);
   const [weeklySpending, setWeeklySpending] = useState(0);
   const [monthlySpending, setMonthlySpending] = useState(0);
@@ -41,11 +42,11 @@ export default function Dashboard() {
     date: "N/A",
     amount: 0,
   });
+
   const [weeklyTrends, setWeeklyTrends] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch Dashboard Data
   const fetchDashboardData = useCallback(async () => {
     setLoading(true);
     try {
@@ -93,9 +94,7 @@ export default function Dashboard() {
       setError(null);
     } catch (err) {
       console.error("Error fetching dashboard data:", err);
-      setError(
-        err.response?.data?.detail || "Failed to fetch dashboard data. Please try again later."
-      );
+      setError("Failed to fetch dashboard data. Please try again later.");
 
       if (err.response?.status === 401) {
         localStorage.removeItem("token");
@@ -140,7 +139,7 @@ export default function Dashboard() {
       ) : (
         <>
           <Grid container spacing={3}>
-            {/* Consumption and Spending Cards */}
+            {/* Consumption Metrics */}
             <Grid item xs={12} container spacing={3}>
               <Grid item xs={3}>
                 <Card elevation={4}>
@@ -167,7 +166,7 @@ export default function Dashboard() {
               <Grid item xs={3}>
                 <Card elevation={4}>
                   <CardContent>
-                    <Typography variant="h6">Monthly Average</Typography>
+                    <Typography variant="h6">Average Consumption</Typography>
                     <Typography variant="h4" color="primary">
                       {monthlyAverage.toFixed(2)} L
                     </Typography>
@@ -187,6 +186,7 @@ export default function Dashboard() {
               </Grid>
             </Grid>
 
+            {/* Spending Metrics */}
             <Grid item xs={12} container spacing={3}>
               <Grid item xs={3}>
                 <Card elevation={4}>
@@ -263,7 +263,6 @@ export default function Dashboard() {
             </Grid>
           </Grid>
 
-          {/* Weekly Trends */}
           <Grid container spacing={3} sx={{ mt: 3 }}>
             <Grid item xs={12}>
               <Card elevation={4}>
@@ -282,8 +281,15 @@ export default function Dashboard() {
                       <LineChart data={weeklyTrends}>
                         <CartesianGrid stroke="#e0e0e0" strokeDasharray="5 5" />
                         <XAxis dataKey="name" />
-                        <YAxis yAxisId="left" label={{ value: "Liters", angle: -90, position: "insideLeft" }} />
-                        <YAxis yAxisId="right" orientation="right" label={{ value: "$ Spent", angle: -90, position: "insideRight" }} />
+                        <YAxis
+                          yAxisId="left"
+                          label={{ value: "Liters", angle: -90, position: "insideLeft" }}
+                        />
+                        <YAxis
+                          yAxisId="right"
+                          orientation="right"
+                          label={{ value: "$ Spent", angle: -90, position: "insideRight" }}
+                        />
                         <Tooltip />
                         <Line
                           yAxisId="left"

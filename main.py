@@ -164,6 +164,7 @@ def get_dashboard_metrics(
     try:
         today = date.today()
         start_of_week = today - timedelta(days=today.weekday())  # Monday
+        end_of_week = start_of_week + timedelta(days=6)  # Sunday
         start_of_year = date(today.year, 1, 1)
 
         # Today's Consumption
@@ -182,14 +183,14 @@ def get_dashboard_metrics(
             db.query(func.sum(ConsumptionEntry.liters_consumed))
             .filter(
                 ConsumptionEntry.date >= start_of_week,
-                ConsumptionEntry.date <= today,
+                ConsumptionEntry.date <= end_of_week,
                 ConsumptionEntry.user_id == current_user.id,
             )
             .scalar()
             or 0
         )
 
-        # Monthly Average Consumption
+        # Average Monthly Consumption
         monthly_data = (
             db.query(
                 func.sum(ConsumptionEntry.liters_consumed).label("total"),
@@ -210,14 +211,13 @@ def get_dashboard_metrics(
 
         # Yearly Consumption
         yearly_consumption = (
-            db.query(func.sum(ConsumptionEntry.liters_consumed))
-            .filter(
-                ConsumptionEntry.date >= start_of_year,
-                ConsumptionEntry.date <= today,
-                ConsumptionEntry.user_id == current_user.id,
-            )
-            .scalar()
-            or 0
+                db.query(func.sum(ConsumptionEntry.liters_consumed))
+                .filter(
+                    func.date_trunc("year", ConsumptionEntry.date) == func.date_trunc("year", today),
+                    ConsumptionEntry.user_id == current_user.id,
+                )
+                .scalar()
+                or 0
         )
 
         # Highest Consumption
@@ -252,7 +252,7 @@ def get_dashboard_metrics(
             db.query(func.sum(SpendingEntry.amount_spent))
             .filter(
                 SpendingEntry.date >= start_of_week,
-                SpendingEntry.date <= today,
+                SpendingEntry.date <= end_of_week,
                 SpendingEntry.user_id == current_user.id,
             )
             .scalar()
@@ -273,14 +273,13 @@ def get_dashboard_metrics(
 
         # Yearly Spending
         yearly_spending = (
-            db.query(func.sum(SpendingEntry.amount_spent))
-            .filter(
-                SpendingEntry.date >= start_of_year,
-                SpendingEntry.date <= today,
-                SpendingEntry.user_id == current_user.id,
-            )
-            .scalar()
-            or 0
+                db.query(func.sum(SpendingEntry.amount_spent))
+                .filter(
+                    func.date_trunc("year", SpendingEntry.date) == func.date_trunc("year", today),
+                    SpendingEntry.user_id == current_user.id,
+                )
+                .scalar()
+                or 0
         )
 
         # Highest Spending
@@ -342,7 +341,6 @@ def get_dashboard_metrics(
     except Exception as e:
         logger.error(f"Error fetching dashboard metrics: {e}")
         raise HTTPException(status_code=500, detail="Failed to fetch dashboard metrics")
-
 
 # Fetch monthly consumption data
 @app.get("/consumption/history")
