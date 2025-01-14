@@ -44,6 +44,7 @@ export default function Dashboard() {
     amount: 0,
   });
 
+  const [spendingPercentage, setSpendingPercentage] = useState(null); // New percentage state
   const [weeklyTrends, setWeeklyTrends] = useState([]); // Weekly trends data for charts
   const [error, setError] = useState(null); // To handle errors
   const [loading, setLoading] = useState(true); // To manage loading state
@@ -93,6 +94,14 @@ export default function Dashboard() {
         amount: data.highestSpending?.amount || 0,
         date: data.highestSpending?.date || "N/A",
       });
+
+      // Ensure valid percentage data
+      const percentage =
+        data.spending_percentage && data.spending_percentage > 0
+          ? data.spending_percentage
+          : null;
+
+      setSpendingPercentage(percentage);
 
       setWeeklyTrends(data.weeklyTrends || []);
 
@@ -149,6 +158,7 @@ export default function Dashboard() {
         <>
           {/* Consumption Metrics */}
           <Grid container spacing={3}>
+            {/* Consumption Row */}
             <Grid item xs={12} container spacing={3}>
               <Grid item xs={3}>
                 <Card elevation={4}>
@@ -242,9 +252,9 @@ export default function Dashboard() {
               </Grid>
             </Grid>
 
-            {/* Highest Records */}
+            {/* Highest Records and Spending % */}
             <Grid item xs={12} container spacing={3}>
-              <Grid item xs={6}>
+              <Grid item xs={4}>
                 <Card elevation={4}>
                   <CardContent>
                     <Typography variant="h6">Highest Consumption</Typography>
@@ -257,13 +267,26 @@ export default function Dashboard() {
                 </Card>
               </Grid>
 
-              <Grid item xs={6}>
+              <Grid item xs={4}>
                 <Card elevation={4}>
                   <CardContent>
                     <Typography variant="h6">Highest Spending</Typography>
                     <Typography variant="body1">
                       {highestSpending.amount
                         ? `${highestSpending.amount.toFixed(2)} Br on ${highestSpending.date}`
+                        : "N/A"}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+
+              <Grid item xs={4}>
+                <Card elevation={4}>
+                  <CardContent>
+                    <Typography variant="h6">Monthly % of Income</Typography>
+                    <Typography variant="h4" style={{ color: "#3f51b5" }}>
+                      {spendingPercentage !== null
+                        ? `${spendingPercentage.toFixed(2)}%`
                         : "N/A"}
                     </Typography>
                   </CardContent>

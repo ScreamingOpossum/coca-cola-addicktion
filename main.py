@@ -289,6 +289,23 @@ def get_dashboard_metrics(
             or 0
         )
 
+        # User's Income
+        user_income = current_user.income or 0
+
+        # Debugging: Log user income and monthly spending
+        logger.info(f"User Income: {user_income}")
+        logger.info(f"Monthly Spending: {monthly_spending}")
+
+        # Calculate percentage of income spent
+        spending_percentage = (
+            (monthly_spending / user_income) * 100
+            if user_income > 0 and monthly_spending > 0
+            else None
+        )
+
+        # Debugging: Log calculated spending percentage
+        logger.info(f"Spending Percentage: {spending_percentage}")
+
         # Yearly Spending
         yearly_spending = (
                 db.query(func.sum(SpendingEntry.amount_spent))
@@ -354,6 +371,7 @@ def get_dashboard_metrics(
             "yearlySpending": yearly_spending,
             "highestSpending": highest_spending,
             "weeklyTrends": weekly_trends,
+             "spending_percentage": round(spending_percentage, 2) if spending_percentage is not None else "N/A",
         }
 
     except Exception as e:
