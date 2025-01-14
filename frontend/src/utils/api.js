@@ -14,7 +14,7 @@ export const setAuthToken = (token) => {
 };
 
 // Handle responses and refresh token if needed
-export const setupInterceptors = (refreshAccessToken, clearAuthData) => {
+export const setupInterceptors = (refreshAccessToken, clearAuthData, navigate) => {
   api.interceptors.request.use(
     (config) => {
       // Authorization header is already handled via setAuthToken
@@ -30,14 +30,20 @@ export const setupInterceptors = (refreshAccessToken, clearAuthData) => {
     (response) => response,
     async (error) => {
       if (error.response && error.response.status === 401) {
-        // Attempt to refresh token
-        try {
-          await refreshAccessToken();
-          return api.request(error.config); // Retry the original request
-        } catch (err) {
-          console.error("Token refresh failed:", err);
-          clearAuthData(); // Log out the user
-          return Promise.reject(err);
+        const originalRequest = error.config;
+
+        // Check if error is due to token expiration
+        if (error.response.data?.detail === "Token expired") {
+          try {
+            // Attempt to refresh token
+            await refreshAccessToken();
+            return api.request(originalRequest); // Retry the original request
+          } catch (err) {
+            console.error("Token refresh failed. Logging out...");
+            clearAuthData(); // Clear user session
+            navigate("/login"); // Redirect to login
+            return Promise.reject(err);
+          }
         }
       } else {
         console.error("API response error:", error);

@@ -1,5 +1,6 @@
 import React, { useContext, useEffect } from "react";
 import { Route, Routes, Navigate } from "react-router-dom";
+import { jwtDecode } from "jwt-decode"; // Ensure proper import
 import { AuthContext } from "./context/AuthContext";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -51,13 +52,29 @@ function App() {
 
   // Auto Logout on Token Expiration
   useEffect(() => {
-    if (token) {
-      const tokenExpirationTime = 60 * 60 * 1000; // 1 hour
+    const calculateTokenExpirationTime = () => {
+      if (!token) return null;
+
+      try {
+        const decodedToken = jwtDecode(token);
+        if (decodedToken.exp) {
+          const expirationTime = decodedToken.exp * 1000 - Date.now();
+          return expirationTime > 0 ? expirationTime : 0;
+        }
+      } catch (error) {
+        console.error("Failed to decode token:", error);
+      }
+      return null;
+    };
+
+    const expirationTime = calculateTokenExpirationTime();
+
+    if (token && expirationTime) {
       const timer = setTimeout(() => {
         logout();
-      }, tokenExpirationTime);
+      }, expirationTime);
 
-      return () => clearTimeout(timer); // Cleanup timer on unmount or token change
+      return () => clearTimeout(timer);
     }
   }, [token, logout]);
 

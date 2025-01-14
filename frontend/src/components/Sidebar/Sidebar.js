@@ -106,7 +106,6 @@ const Sidebar = () => {
           </ListItemIcon>
           <ListItemText primary="Logout" />
         </ListItem>
-        <Box sx={{ fontSize: "12px", color: "#999", marginTop: "10px" }}>v1.0.0</Box>
       </Box>
     </Drawer>
   );
