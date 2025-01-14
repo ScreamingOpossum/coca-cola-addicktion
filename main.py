@@ -24,6 +24,7 @@ from sqlalchemy import func, desc
 import logging
 from auth import auth_router
 from fastapi import Query
+from calendar import monthrange
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -69,6 +70,11 @@ async def log_requests(request: Request, call_next):
     response = await call_next(request)
     logger.info(f"Response: {response.status_code}")
     return response
+
+# Get the current date and month details
+today = date.today()
+days_in_month = monthrange(today.year, today.month)[1]  # Total days in the current month
+days_up_to_today = today.day  # Days elapsed up to today
 
 # User Login
 @app.post("/auth/login", response_model=Token)
@@ -213,9 +219,11 @@ def get_dashboard_metrics(
             )
             .first()
         )
+
+        # Adjust monthly_average logic
         monthly_average = (
-            (monthly_data.total or 0) / monthly_data.unique_days
-            if monthly_data and monthly_data.unique_days > 0
+            (monthly_data.total or 0) / days_up_to_today
+            if monthly_data and days_up_to_today > 0
             else 0
         )
 
