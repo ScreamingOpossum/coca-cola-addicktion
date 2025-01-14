@@ -98,4 +98,15 @@ export const deleteSpendingEntry = async (entryId) => {
   }
 };
 
+//User deletion
+export const deleteUser = async () => {
+  try {
+    const response = await api.delete("/user");
+    return response.data;
+  } catch (error) {
+    console.error("Failed to delete user:", error);
+    throw error;
+  }
+};
+
 export default api;

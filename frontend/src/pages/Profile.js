@@ -10,12 +10,17 @@ import {
   Snackbar,
   Alert,
   Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
 } from "@mui/material";
 import { AuthContext } from "../context/AuthContext";
 import api from "../utils/api";
 
 const Profile = () => {
-  const { user, updateUserProfile, fetchUserProfile } = useContext(AuthContext);
+  const { user, updateUserProfile, fetchUserProfile, logout } = useContext(AuthContext);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -23,16 +28,17 @@ const Profile = () => {
     email: "",
     dateOfBirth: "",
     monthlyGoal: 0,
-    income: 0, // Default value for income
+    income: 0,
   });
 
   const [consumptionProgress, setConsumptionProgress] = useState(0);
-  const [progressColor, setProgressColor] = useState("lightgreen");
+  const [progressColor, setProgressColor] = useState("#66BB6A");
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success",
   });
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // Load user data into the form and calculate progress bar
   useEffect(() => {
@@ -43,7 +49,7 @@ const Profile = () => {
         email = "",
         date_of_birth = "",
         monthly_goal = 0,
-        income = 0, // Ensure default value
+        income = 0,
         current_month_consumption = 0,
       } = user;
 
@@ -53,7 +59,7 @@ const Profile = () => {
         email,
         dateOfBirth: date_of_birth,
         monthlyGoal: monthly_goal,
-        income, // Ensure default value
+        income,
       });
 
       calculateProgressBar(monthly_goal, current_month_consumption);
@@ -69,7 +75,7 @@ const Profile = () => {
     if (progress > 100) color = "darkred";
     else if (progress >= 90) color = "red";
     else if (progress >= 75) color = "orange";
-    else if (progress >= 50) color = "#ffc800";
+    else if (progress >= 50) color = "#FFC107";
     else if (progress >= 25) color = "green";
 
     setProgressColor(color);
@@ -81,7 +87,7 @@ const Profile = () => {
     setFormData((prevData) => ({
       ...prevData,
       [name]: name === "income"
-        ? value.replace(/[^0-9.]/g, "") // Strip non-numeric characters
+        ? value.replace(/[^0-9.]/g, "")
         : value,
     }));
   };
@@ -97,7 +103,7 @@ const Profile = () => {
         last_name: formData.lastName,
         date_of_birth: formData.dateOfBirth,
         monthly_goal: formData.monthlyGoal,
-        income: parseFloat(formData.income) || 0, // Parse income back to number
+        income: parseFloat(formData.income) || 0,
       });
 
       updateUserProfile(response.data);
@@ -108,7 +114,6 @@ const Profile = () => {
         severity: "success",
       });
 
-      // Fetch the latest user profile to ensure data consistency
       await fetchUserProfile();
     } catch (error) {
       console.error("Profile Update Error:", error);
@@ -117,6 +122,27 @@ const Profile = () => {
         message: "Failed to update profile. Please try again.",
         severity: "error",
       });
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      await api.delete("/user/delete"); // Call API to delete user account
+      logout(); // Log out the user after deletion
+      setSnackbar({
+        open: true,
+        message: "Account deleted successfully.",
+        severity: "success",
+      });
+    } catch (error) {
+      console.error("Account Deletion Error:", error);
+      setSnackbar({
+        open: true,
+        message: "Failed to delete account. Please try again.",
+        severity: "error",
+      });
+    } finally {
+      setDeleteDialogOpen(false); // Close dialog
     }
   };
 
@@ -150,7 +176,7 @@ const Profile = () => {
             <Tooltip title={`${(user?.current_month_consumption || 0).toFixed(2)} L`} arrow>
               <LinearProgress
                 variant="determinate"
-                value={Math.min(consumptionProgress, 100)} // Cap progress visually at 100%
+                value={Math.min(consumptionProgress, 100)}
                 sx={{
                   height: 25,
                   borderRadius: 5,
@@ -248,8 +274,32 @@ const Profile = () => {
           <Button variant="contained" color="primary" onClick={handleSave} sx={{ mt: 2 }}>
             Save Changes
           </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={() => setDeleteDialogOpen(true)}
+            sx={{ mt: 2, ml: 2 }}
+          >
+            Delete Account
+          </Button>
         </Grid>
       </Grid>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle>Confirm Account Deletion</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete your account? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleDeleteAccount} color="error">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Snackbar Notifications */}
       <Snackbar

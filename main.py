@@ -27,7 +27,10 @@ from fastapi import Query
 
 # Initialize FastAPI app
 app = FastAPI()
+
+# Initialize router
 app.include_router(auth_router)
+
 # Enable CORS for frontend communication
 app.add_middleware(
     CORSMiddleware,
@@ -58,7 +61,6 @@ def get_db():
         yield db
     finally:
         db.close()
-
 
 # Middleware to log requests
 @app.middleware("http")
@@ -102,7 +104,6 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     db.refresh(new_user)
     return new_user
 
-# Get user profile
 # Get user profile
 @app.get("/user/profile", response_model=UserProfileResponse)
 def get_user_profile(
@@ -764,3 +765,30 @@ def delete_spending_entry(
 
     logger.info(f"Spending entry ID: {entry_id} deleted successfully.")
     return {"message": "Spending entry deleted successfully."}
+
+#User Deleting
+@app.delete("/user/delete", status_code=204)
+def delete_user_account(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    try:
+        # Fetch the user from the database
+        user = db.query(User).filter(User.id == current_user.id).first()
+
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # Delete the user and their related entries
+        db.query(ConsumptionEntry).filter(ConsumptionEntry.user_id == current_user.id).delete()
+        db.query(SpendingEntry).filter(SpendingEntry.user_id == current_user.id).delete()
+        db.delete(user)
+        db.commit()
+
+        logger.info(f"User {current_user.id} deleted successfully")
+        return {"message": "Account deleted successfully"}
+
+    except Exception as e:
+        logger.error(f"Error deleting user {current_user.id}: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Internal Server Error")
