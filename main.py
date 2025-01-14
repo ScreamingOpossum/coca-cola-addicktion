@@ -349,7 +349,7 @@ def get_monthly_consumption_history(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
     page: int = Query(1, ge=1),  # Page number (default is 1)
-    limit: int = Query(8, ge=1),  # Items per page (default is 8)
+    limit: int = Query(5, ge=1),  # Items per page (default is 5)
 ):
     logger.info(f"Fetching paginated consumption history for user: {current_user.id}")
     try:
@@ -626,3 +626,66 @@ def add_spending_entry(
         "city": new_entry.city,
         "notes": new_entry.notes,
     }
+
+#Consumption table update
+@app.put("/consumption/{entry_id}", response_model=ConsumptionResponse)
+def update_consumption_entry(
+    entry_id: int,
+    updated_data: ConsumptionCreate = Body(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    logger.info(f"Updating consumption entry {entry_id} for user {current_user.id}")
+
+    entry = db.query(ConsumptionEntry).filter_by(id=entry_id, user_id=current_user.id).first()
+
+    if not entry:
+        logger.error("Consumption entry not found or unauthorized access.")
+        raise HTTPException(
+            status_code=404, detail="Consumption entry not found"
+        )
+
+    if updated_data.liters_consumed <= 0:
+        logger.error("Liters consumed must be a positive number.")
+        raise HTTPException(
+            status_code=400, detail="Liters consumed must be a positive number."
+        )
+
+    # Update the entry fields
+    entry.date = updated_data.date
+    entry.liters_consumed = updated_data.liters_consumed
+    entry.notes = updated_data.notes
+
+    db.commit()
+    db.refresh(entry)
+
+    logger.info(f"Consumption entry updated successfully: {entry}")
+    return {
+        "id": entry.id,
+        "date": entry.date,
+        "liters_consumed": entry.liters_consumed,
+        "notes": entry.notes,
+    }
+
+#Consumption table delete
+@app.delete("/consumption/{entry_id}")
+def delete_consumption_entry(
+    entry_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    logger.info(f"Attempting to delete consumption entry: {entry_id} for user {current_user.id}")
+    entry = db.query(ConsumptionEntry).filter(
+        ConsumptionEntry.id == entry_id,
+        ConsumptionEntry.user_id == current_user.id,
+    ).first()
+
+    if not entry:
+        logger.error(f"Consumption entry {entry_id} not found for user {current_user.id}")
+        raise HTTPException(status_code=404, detail="Consumption entry not found")
+
+    db.delete(entry)
+    db.commit()
+    logger.info(f"Successfully deleted consumption entry {entry_id}")
+    return {"detail": "Consumption entry deleted successfully"}
+

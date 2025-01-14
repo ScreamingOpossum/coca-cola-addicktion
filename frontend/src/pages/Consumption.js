@@ -19,13 +19,21 @@ import {
   Paper,
   Snackbar,
   Pagination,
+  IconButton,
+  Menu,
+  MenuItem,
 } from "@mui/material";
-import axios from "axios";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import api from "../utils/api";
 
-const ITEMS_PER_PAGE = 8;
+const ITEMS_PER_PAGE = 5;
 
 const Consumption = () => {
   const [openForm, setOpenForm] = useState(false);
+  const [formType, setFormType] = useState("add"); // 'add' or 'edit'
+  const [selectedEntry, setSelectedEntry] = useState(null);
+  const [confirmationDialog, setConfirmationDialog] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [formData, setFormData] = useState({
@@ -33,10 +41,29 @@ const Consumption = () => {
     litersConsumed: "",
     notes: "",
   });
-  const [monthlyData, setMonthlyData] = useState([]); // Stores monthly data
-  const [paginationStates, setPaginationStates] = useState({}); // Pagination state for each month
+  const [monthlyData, setMonthlyData] = useState([]);
+  const [paginationStates, setPaginationStates] = useState({});
+  const [anchorEl, setAnchorEl] = useState(null);
 
-  const handleOpenForm = () => setOpenForm(true);
+  const handleOpenForm = (type = "add", entry = null) => {
+    setFormType(type);
+    setSelectedEntry(entry);
+    if (entry) {
+      setFormData({
+        date: entry.date,
+        litersConsumed: entry.liters_consumed,
+        notes: entry.notes,
+      });
+    } else {
+      setFormData({
+        date: new Date().toISOString().split("T")[0],
+        litersConsumed: "",
+        notes: "",
+      });
+    }
+    setOpenForm(true);
+  };
+
   const handleCloseForm = () => {
     setOpenForm(false);
     setError(null);
@@ -49,19 +76,7 @@ const Consumption = () => {
 
   const fetchMonthlyData = useCallback(async () => {
     try {
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        setError("Authentication token is missing. Please log in.");
-        return;
-      }
-
-      const response = await axios.get("http://127.0.0.1:8000/consumption/history", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
+      const response = await api.get("/consumption/history");
       const data = response.data.data || [];
       const initialPaginationStates = {};
 
@@ -93,46 +108,42 @@ const Consumption = () => {
     }
 
     try {
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        setError("Authentication token is missing. Please log in.");
-        return;
-      }
-
-      await axios.post(
-        "http://127.0.0.1:8000/consumption",
-        {
+      if (formType === "add") {
+        await api.post("/consumption", {
           date: formData.date,
           liters_consumed: parseFloat(formData.litersConsumed),
           notes: formData.notes,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+        });
+      } else if (formType === "edit" && selectedEntry) {
+        await api.put(`/consumption/${selectedEntry.id}`, {
+          date: formData.date,
+          liters_consumed: parseFloat(formData.litersConsumed),
+          notes: formData.notes,
+        });
+      }
 
-      setFormData({
-        date: new Date().toISOString().split("T")[0],
-        litersConsumed: "",
-        notes: "",
-      });
       setOpenForm(false);
-      setError(null);
       setSuccess(true);
       fetchMonthlyData();
     } catch (err) {
-      console.error("Failed to add consumption entry:", err);
-      setError(
-        err.response?.data?.detail || "Failed to add consumption entry. Please try again."
-      );
+      console.error("Failed to save consumption entry:", err);
+      setError(err.response?.data?.detail || "Failed to save consumption entry. Please try again.");
     }
   };
 
-  const handleCloseSuccess = () => {
-    setSuccess(false);
+  const handleDelete = async () => {
+    try {
+      if (entryToDelete) {
+        await api.delete(`/consumption/${entryToDelete.id}`);
+        setConfirmationDialog(false);
+        setEntryToDelete(null);
+        setSuccess(true);
+        fetchMonthlyData();
+      }
+    } catch (err) {
+      console.error("Failed to delete consumption entry:", err);
+      setError(err.response?.data?.detail || "Failed to delete consumption entry. Please try again.");
+    }
   };
 
   const handlePageChange = (monthIndex, event, value) => {
@@ -145,6 +156,15 @@ const Consumption = () => {
   const getPaginatedEntries = (entries, currentPage) => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     return entries.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  };
+
+  const handleMenuClick = (event, entry) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedEntry(entry);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
   };
 
   useEffect(() => {
@@ -166,14 +186,11 @@ const Consumption = () => {
       <Typography variant="h4" gutterBottom>
         Consumption
       </Typography>
-      <Typography variant="subtitle1" gutterBottom>
-        Track and manage Coca-Cola consumption data.
-      </Typography>
       <Button
         variant="contained"
         color="primary"
         sx={{ mt: 2 }}
-        onClick={handleOpenForm}
+        onClick={() => handleOpenForm("add")}
       >
         Add Consumption
       </Button>
@@ -204,6 +221,7 @@ const Consumption = () => {
                     <TableCell>Date</TableCell>
                     <TableCell>Liters Consumed</TableCell>
                     <TableCell>Notes</TableCell>
+                    <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -212,6 +230,27 @@ const Consumption = () => {
                       <TableCell>{entry.date}</TableCell>
                       <TableCell>{entry.liters_consumed || "N/A"}</TableCell>
                       <TableCell>{entry.notes || "N/A"}</TableCell>
+                      <TableCell>
+                        <IconButton onClick={(e) => handleMenuClick(e, entry)}>
+                          <MoreVertIcon />
+                        </IconButton>
+                        <Menu
+                          anchorEl={anchorEl}
+                          open={Boolean(anchorEl) && selectedEntry?.id === entry.id}
+                          onClose={handleMenuClose}
+                        >
+                          <MenuItem onClick={() => handleOpenForm("edit", entry)}>Edit</MenuItem>
+                          <MenuItem
+                            onClick={() => {
+                              setConfirmationDialog(true);
+                              setEntryToDelete(entry);
+                              handleMenuClose();
+                            }}
+                          >
+                            Delete
+                          </MenuItem>
+                        </Menu>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -230,7 +269,7 @@ const Consumption = () => {
       })}
 
       <Dialog open={openForm} onClose={handleCloseForm}>
-        <DialogTitle>Add Consumption</DialogTitle>
+        <DialogTitle>{formType === "add" ? "Add Consumption" : "Edit Consumption"}</DialogTitle>
         <DialogContent>
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
@@ -272,14 +311,29 @@ const Consumption = () => {
         </DialogActions>
       </Dialog>
 
+      <Dialog open={confirmationDialog} onClose={() => setConfirmationDialog(false)}>
+        <DialogTitle>Delete Confirmation</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete this record? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmationDialog(false)}>Cancel</Button>
+          <Button onClick={handleDelete} variant="contained" color="error">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Snackbar
         open={success}
         autoHideDuration={3000}
-        onClose={handleCloseSuccess}
+        onClose={() => setSuccess(false)}
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       >
-        <Alert onClose={handleCloseSuccess} severity="success" sx={{ width: "100%" }}>
-          New consumption record added successfully!
+        <Alert onClose={() => setSuccess(false)} severity="success" sx={{ width: "100%" }}>
+          Operation successful!
         </Alert>
       </Snackbar>
     </Box>

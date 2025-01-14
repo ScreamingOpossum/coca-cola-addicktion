@@ -48,4 +48,26 @@ export const setupInterceptors = (refreshAccessToken, clearAuthData) => {
   );
 };
 
+// Add a function to edit consumption entries
+export const editConsumptionEntry = async (entryId, updatedData) => {
+  try {
+    const response = await api.put(`/consumption/${entryId}`, updatedData);
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to edit consumption entry (ID: ${entryId}):`, error);
+    throw error;
+  }
+};
+
+// Add a function to delete consumption entries
+export const deleteConsumptionEntry = async (entryId) => {
+  try {
+    const response = await api.delete(`/consumption/${entryId}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to delete consumption entry (ID: ${entryId}):`, error);
+    throw error;
+  }
+};
+
 export default api;
