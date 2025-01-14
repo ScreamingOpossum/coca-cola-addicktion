@@ -22,7 +22,7 @@ import {
 } from "@mui/material";
 import axios from "axios";
 
-const ITEMS_PER_PAGE = 8;
+const ITEMS_PER_PAGE = 5;
 
 const Spending = () => {
   const [openForm, setOpenForm] = useState(false);

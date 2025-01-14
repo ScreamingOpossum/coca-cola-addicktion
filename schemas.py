@@ -77,33 +77,7 @@ class UserUpdateSchema(BaseModel):
     date_of_birth: Optional[date]
 
     class Config:
-        orm_mode = True
-
-
-# --------------------------
-# Location Schemas
-# --------------------------
-
-class LocationBase(BaseModel):
-    store_name: str = Field(..., alias="storeName", max_length=100)
-    city: str = Field(..., max_length=50)
-
-    class Config:
-        populate_by_name = True
         from_attributes = True
-
-
-class LocationCreate(LocationBase):
-    pass
-
-
-class LocationResponse(LocationBase):
-    id: int
-
-    class Config:
-        populate_by_name = True
-        from_attributes = True
-
 
 # --------------------------
 # Consumption Schemas
