@@ -103,6 +103,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     return new_user
 
 # Get user profile
+# Get user profile
 @app.get("/user/profile", response_model=UserProfileResponse)
 def get_user_profile(
     current_user: User = Depends(get_current_user),
@@ -121,6 +122,7 @@ def get_user_profile(
         "email": current_user.email,
         "date_of_birth": current_user.date_of_birth,
         "monthly_goal": current_user.monthly_goal,
+        "income": current_user.income,  # Added income field
         "current_month_consumption": monthly_data[0] or 0.0,
     }
 
@@ -140,11 +142,17 @@ def update_user_profile(
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
-        # Update fields
-        user.first_name = user_update.first_name
-        user.last_name = user_update.last_name
-        user.monthly_goal = user_update.monthly_goal
-        user.date_of_birth = user_update.date_of_birth
+        # Update fields only if they are provided
+        if user_update.first_name is not None:
+            user.first_name = user_update.first_name
+        if user_update.last_name is not None:
+            user.last_name = user_update.last_name
+        if user_update.monthly_goal is not None:
+            user.monthly_goal = user_update.monthly_goal
+        if user_update.date_of_birth is not None:
+            user.date_of_birth = user_update.date_of_birth
+        if user_update.income is not None:  # Added income update
+            user.income = user_update.income
 
         # Commit the changes
         db.add(user)
@@ -154,7 +162,7 @@ def update_user_profile(
         return user
     except Exception as e:
         db.rollback()
-        print(f"Error updating profile: {e}")
+        logger.error(f"Error updating profile: {e}")
         raise HTTPException(status_code=500, detail="Internal Server Error")
 
 # Dashboard metrics endpoint

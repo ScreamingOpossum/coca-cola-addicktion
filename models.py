@@ -1,4 +1,15 @@
-from sqlalchemy import Column, Integer, String, Float, Date, TIMESTAMP, func, ForeignKey, Enum, CheckConstraint
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Float,
+    Date,
+    TIMESTAMP,
+    func,
+    ForeignKey,
+    Enum,
+    CheckConstraint,
+)
 from sqlalchemy.orm import relationship, declarative_base
 import enum
 from datetime import date
@@ -26,6 +37,7 @@ class User(Base):
     date_of_birth = Column(Date, nullable=False)
     monthly_goal = Column(Float, nullable=True)  # Liters
     role = Column(Enum(RoleEnum), default=RoleEnum.user)  # Default role is "user"
+    income = Column(Float, nullable=True)  # Optional Income field
 
     # Timestamps
     created_at = Column(TIMESTAMP, server_default=func.now())
@@ -34,25 +46,6 @@ class User(Base):
     # Relationships
     consumption_entries = relationship("ConsumptionEntry", back_populates="user")
     spending_entries = relationship("SpendingEntry", back_populates="user")
-
-
-# ----------------------------
-# Purchase Locations Table
-# ----------------------------
-class PurchaseLocation(Base):
-    __tablename__ = "purchase_locations"
-
-    id = Column(Integer, primary_key=True, index=True)
-    store_name = Column(String, nullable=False, unique=True)
-    city = Column(String, nullable=False, default="Minsk")
-
-    # Timestamps
-    created_at = Column(TIMESTAMP, server_default=func.now())
-    updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
-
-    # Relationships
-    consumption_entries = relationship("ConsumptionEntry", back_populates="location")
-    spending_entries = relationship("SpendingEntry", back_populates="location")
 
 
 # ----------------------------
@@ -73,13 +66,11 @@ class ConsumptionEntry(Base):
 
     # Relationships
     user = relationship("User", back_populates="consumption_entries")
-    location = relationship("PurchaseLocation", back_populates="consumption_entries")
 
     # Constraints
     __table_args__ = (
         CheckConstraint("liters_consumed > 0", name="check_liters_positive"),
     )
-
 
 # ----------------------------
 # Spending Entries Table
@@ -102,7 +93,6 @@ class SpendingEntry(Base):
 
     # Relationships
     user = relationship("User", back_populates="spending_entries")
-    location = relationship("PurchaseLocation", back_populates="spending_entries")
 
     # Constraints
     __table_args__ = (

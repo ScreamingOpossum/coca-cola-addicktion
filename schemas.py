@@ -35,6 +35,7 @@ class UserBase(BaseModel):
     email: EmailStr
     date_of_birth: date = Field(..., alias="dateOfBirth")
     monthly_goal: Optional[float] = Field(None, alias="monthlyGoal", gt=0)
+    income: Optional[float] = Field(None, gt=0)  # Optional income field
 
     class Config:
         populate_by_name = True
@@ -43,6 +44,10 @@ class UserBase(BaseModel):
 
 class UserCreate(UserBase):
     password: str = Field(..., min_length=8)
+
+    class Config:
+        populate_by_name = True
+        from_attributes = True
 
 
 class UserResponse(UserBase):
@@ -62,22 +67,36 @@ class UserProfileResponse(BaseModel):
     last_name: str
     email: str
     date_of_birth: date
-    monthly_goal: float
+    monthly_goal: Optional[float]
+    income: Optional[float]  # Include income in the profile response
     current_month_consumption: float
+
+    class Config:
+        populate_by_name = True
+        from_attributes = True
+
 
 class UserProfileUpdate(BaseModel):
     first_name: Optional[str]
     last_name: Optional[str]
     monthly_goal: Optional[float]
+    income: Optional[float]  # Allow updating income
+
+    class Config:
+        populate_by_name = True
+        from_attributes = True
+
 
 class UserUpdateSchema(BaseModel):
     first_name: Optional[str]
     last_name: Optional[str]
-    monthly_goal: Optional[int]
+    monthly_goal: Optional[float]
     date_of_birth: Optional[date]
+    income: Optional[float]  # Include income in the update schema
 
     class Config:
         from_attributes = True
+
 
 # --------------------------
 # Consumption Schemas

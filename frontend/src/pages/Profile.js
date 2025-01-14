@@ -23,6 +23,7 @@ const Profile = () => {
     email: "",
     dateOfBirth: "",
     monthlyGoal: 0,
+    income: 0, // Default value for income
   });
 
   const [consumptionProgress, setConsumptionProgress] = useState(0);
@@ -42,6 +43,7 @@ const Profile = () => {
         email = "",
         date_of_birth = "",
         monthly_goal = 0,
+        income = 0, // Ensure default value
         current_month_consumption = 0,
       } = user;
 
@@ -51,6 +53,7 @@ const Profile = () => {
         email,
         dateOfBirth: date_of_birth,
         monthlyGoal: monthly_goal,
+        income, // Ensure default value
       });
 
       calculateProgressBar(monthly_goal, current_month_consumption);
@@ -62,11 +65,11 @@ const Profile = () => {
     setConsumptionProgress(progress);
 
     // Update color based on thresholds
-    let color = "lightgreen";
+    let color = "#66BB6A";
     if (progress > 100) color = "darkred";
     else if (progress >= 90) color = "red";
     else if (progress >= 75) color = "orange";
-    else if (progress >= 50) color = "yellow";
+    else if (progress >= 50) color = "#ffc800";
     else if (progress >= 25) color = "green";
 
     setProgressColor(color);
@@ -74,10 +77,17 @@ const Profile = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
     setFormData((prevData) => ({
       ...prevData,
-      [name]: name === "monthlyGoal" ? parseFloat(value) : value,
+      [name]: name === "income"
+        ? value.replace(/[^0-9.]/g, "") // Strip non-numeric characters
+        : value,
     }));
+  };
+
+  const formatCurrency = (value) => {
+    return value ? `${parseFloat(value).toFixed(2)} Br` : "";
   };
 
   const handleSave = async () => {
@@ -87,6 +97,7 @@ const Profile = () => {
         last_name: formData.lastName,
         date_of_birth: formData.dateOfBirth,
         monthly_goal: formData.monthlyGoal,
+        income: parseFloat(formData.income) || 0, // Parse income back to number
       });
 
       updateUserProfile(response.data);
@@ -220,7 +231,16 @@ const Profile = () => {
             label="Monthly Consumption Goal (Liters)"
             name="monthlyGoal"
             type="number"
-            value={formData.monthlyGoal}
+            value={formData.monthlyGoal || ""}
+            onChange={handleChange}
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            label="Monthly Income (Optional)"
+            name="income"
+            value={formatCurrency(formData.income)}
             onChange={handleChange}
           />
         </Grid>
