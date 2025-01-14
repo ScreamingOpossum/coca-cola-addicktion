@@ -19,13 +19,21 @@ import {
   Paper,
   Snackbar,
   Pagination,
+  IconButton,
+  Menu,
+  MenuItem,
 } from "@mui/material";
-import axios from "axios";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import api from "../utils/api";
 
 const ITEMS_PER_PAGE = 5;
 
 const Spending = () => {
   const [openForm, setOpenForm] = useState(false);
+  const [formType, setFormType] = useState("add"); // 'add' or 'edit'
+  const [selectedEntry, setSelectedEntry] = useState(null);
+  const [confirmationDialog, setConfirmationDialog] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [formData, setFormData] = useState({
@@ -36,10 +44,35 @@ const Spending = () => {
     city: "",
     notes: "",
   });
-  const [monthlyData, setMonthlyData] = useState([]); // Stores monthly data
-  const [paginationStates, setPaginationStates] = useState({}); // Pagination state for each month
+  const [monthlyData, setMonthlyData] = useState([]);
+  const [paginationStates, setPaginationStates] = useState({});
+  const [anchorEl, setAnchorEl] = useState(null);
 
-  const handleOpenForm = () => setOpenForm(true);
+  const handleOpenForm = (type = "add", entry = null) => {
+    setFormType(type);
+    setSelectedEntry(entry);
+    if (entry) {
+      setFormData({
+        date: entry.date,
+        liters: entry.liters,
+        amountSpent: entry.amount_spent,
+        store: entry.store,
+        city: entry.city,
+        notes: entry.notes,
+      });
+    } else {
+      setFormData({
+        date: new Date().toISOString().split("T")[0],
+        liters: "",
+        amountSpent: "",
+        store: "",
+        city: "",
+        notes: "",
+      });
+    }
+    setOpenForm(true);
+  };
+
   const handleCloseForm = () => {
     setOpenForm(false);
     setError(null);
@@ -52,19 +85,7 @@ const Spending = () => {
 
   const fetchMonthlyData = useCallback(async () => {
     try {
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        setError("Authentication token is missing. Please log in.");
-        return;
-      }
-
-      const response = await axios.get("http://127.0.0.1:8000/spending/history", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
+      const response = await api.get("/spending/history");
       const data = response.data.data || [];
       const initialPaginationStates = {};
 
@@ -96,52 +117,48 @@ const Spending = () => {
     }
 
     try {
-      const token = localStorage.getItem("token");
-
-      if (!token) {
-        setError("Authentication token is missing. Please log in.");
-        return;
-      }
-
-      await axios.post(
-        "http://127.0.0.1:8000/spending",
-        {
+      if (formType === "add") {
+        await api.post("/spending", {
           date: formData.date,
           liters: parseFloat(formData.liters),
           amount_spent: parseFloat(formData.amountSpent),
           store: formData.store,
           city: formData.city,
           notes: formData.notes,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+        });
+      } else if (formType === "edit" && selectedEntry) {
+        await api.put(`/spending/${selectedEntry.id}`, {
+          date: formData.date,
+          liters: parseFloat(formData.liters),
+          amount_spent: parseFloat(formData.amountSpent),
+          store: formData.store,
+          city: formData.city,
+          notes: formData.notes,
+        });
+      }
 
-      setFormData({
-        date: new Date().toISOString().split("T")[0],
-        liters: "",
-        amountSpent: "",
-        store: "",
-        city: "",
-        notes: "",
-      });
       setOpenForm(false);
-      setError(null);
       setSuccess(true);
       fetchMonthlyData();
     } catch (err) {
-      console.error("Failed to add spending entry:", err);
-      setError(
-        err.response?.data?.detail || "Failed to add spending entry. Please try again."
-      );
+      console.error("Failed to save spending entry:", err);
+      setError(err.response?.data?.detail || "Failed to save spending entry. Please try again.");
     }
   };
 
-  const handleCloseSuccess = () => {
-    setSuccess(false);
+  const handleDelete = async () => {
+    try {
+      if (entryToDelete) {
+        await api.delete(`/spending/${entryToDelete.id}`);
+        setConfirmationDialog(false);
+        setEntryToDelete(null);
+        setSuccess(true);
+        fetchMonthlyData();
+      }
+    } catch (err) {
+      console.error("Failed to delete spending entry:", err);
+      setError(err.response?.data?.detail || "Failed to delete spending entry. Please try again.");
+    }
   };
 
   const handlePageChange = (monthIndex, event, value) => {
@@ -154,6 +171,15 @@ const Spending = () => {
   const getPaginatedEntries = (entries, currentPage) => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     return entries.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  };
+
+  const handleMenuClick = (event, entry) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedEntry(entry);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
   };
 
   useEffect(() => {
@@ -175,14 +201,11 @@ const Spending = () => {
       <Typography variant="h4" gutterBottom>
         Spending
       </Typography>
-      <Typography variant="subtitle1" gutterBottom>
-        Track and manage Coca-Cola spending data.
-      </Typography>
       <Button
         variant="contained"
         color="primary"
         sx={{ mt: 2 }}
-        onClick={handleOpenForm}
+        onClick={() => handleOpenForm("add")}
       >
         Add Spending
       </Button>
@@ -216,6 +239,7 @@ const Spending = () => {
                     <TableCell>Store</TableCell>
                     <TableCell>City</TableCell>
                     <TableCell>Notes</TableCell>
+                    <TableCell>Actions</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -227,6 +251,27 @@ const Spending = () => {
                       <TableCell>{entry.store || "N/A"}</TableCell>
                       <TableCell>{entry.city || "N/A"}</TableCell>
                       <TableCell>{entry.notes || "N/A"}</TableCell>
+                      <TableCell>
+                        <IconButton onClick={(e) => handleMenuClick(e, entry)}>
+                          <MoreVertIcon />
+                        </IconButton>
+                        <Menu
+                          anchorEl={anchorEl}
+                          open={Boolean(anchorEl) && selectedEntry?.id === entry.id}
+                          onClose={handleMenuClose}
+                        >
+                          <MenuItem onClick={() => handleOpenForm("edit", entry)}>Edit</MenuItem>
+                          <MenuItem
+                            onClick={() => {
+                              setConfirmationDialog(true);
+                              setEntryToDelete(entry);
+                              handleMenuClose();
+                            }}
+                          >
+                            Delete
+                          </MenuItem>
+                        </Menu>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -245,7 +290,7 @@ const Spending = () => {
       })}
 
       <Dialog open={openForm} onClose={handleCloseForm}>
-        <DialogTitle>Add Spending</DialogTitle>
+        <DialogTitle>{formType === "add" ? "Add Spending" : "Edit Spending"}</DialogTitle>
         <DialogContent>
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
@@ -312,14 +357,29 @@ const Spending = () => {
         </DialogActions>
       </Dialog>
 
+      <Dialog open={confirmationDialog} onClose={() => setConfirmationDialog(false)}>
+        <DialogTitle>Delete Confirmation</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete this record? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmationDialog(false)}>Cancel</Button>
+          <Button onClick={handleDelete} variant="contained" color="error">
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Snackbar
         open={success}
         autoHideDuration={3000}
-        onClose={handleCloseSuccess}
+        onClose={() => setSuccess(false)}
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       >
-        <Alert onClose={handleCloseSuccess} severity="success" sx={{ width: "100%" }}>
-          New spending record added successfully!
+        <Alert onClose={() => setSuccess(false)} severity="success" sx={{ width: "100%" }}>
+          Operation successful!
         </Alert>
       </Snackbar>
     </Box>

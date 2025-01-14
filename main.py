@@ -689,3 +689,70 @@ def delete_consumption_entry(
     logger.info(f"Successfully deleted consumption entry {entry_id}")
     return {"detail": "Consumption entry deleted successfully"}
 
+#Spending update
+@app.put("/spending/{entry_id}", response_model=SpendingResponse)
+def update_spending_entry(
+    entry_id: int,
+    updated_spending: SpendingCreate = Body(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    logger.info(f"Updating spending entry ID: {entry_id} for user: {current_user.id}")
+
+    entry = db.query(SpendingEntry).filter(
+        SpendingEntry.id == entry_id, SpendingEntry.user_id == current_user.id
+    ).first()
+
+    if not entry:
+        logger.error(f"Spending entry ID: {entry_id} not found.")
+        raise HTTPException(status_code=404, detail="Spending entry not found.")
+
+    if updated_spending.amount_spent <= 0:
+        logger.error("Amount spent must be a positive number.")
+        raise HTTPException(
+            status_code=400, detail="Amount spent must be a positive number."
+        )
+
+    entry.date = updated_spending.date
+    entry.amount_spent = updated_spending.amount_spent
+    entry.liters = updated_spending.liters if updated_spending.liters else 0
+    entry.store = updated_spending.store if updated_spending.store else "N/A"
+    entry.city = updated_spending.city if updated_spending.city else "N/A"
+    entry.notes = updated_spending.notes
+
+    db.commit()
+    db.refresh(entry)
+
+    logger.info(f"Spending entry updated successfully: {entry}")
+    return {
+        "id": entry.id,
+        "date": entry.date,
+        "amount_spent": entry.amount_spent,
+        "liters": entry.liters,
+        "store": entry.store,
+        "city": entry.city,
+        "notes": entry.notes,
+    }
+
+#Spending deleting
+@app.delete("/spending/{entry_id}", response_model=dict)
+def delete_spending_entry(
+    entry_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    logger.info(f"Deleting spending entry ID: {entry_id} for user: {current_user.id}")
+
+    entry = db.query(SpendingEntry).filter(
+        SpendingEntry.id == entry_id, SpendingEntry.user_id == current_user.id
+    ).first()
+
+    if not entry:
+        logger.error(f"Spending entry ID: {entry_id} not found.")
+        raise HTTPException(status_code=404, detail="Spending entry not found.")
+
+    db.delete(entry)
+    db.commit()
+
+    logger.info(f"Spending entry ID: {entry_id} deleted successfully.")
+    return {"message": "Spending entry deleted successfully."}

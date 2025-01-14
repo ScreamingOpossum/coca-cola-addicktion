@@ -70,4 +70,26 @@ export const deleteConsumptionEntry = async (entryId) => {
   }
 };
 
+// Add a function to edit spending entries
+export const editSpendingEntry = async (entryId, updatedData) => {
+  try {
+    const response = await api.put(`/spending/${entryId}`, updatedData);
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to edit spending entry (ID: ${entryId}):`, error);
+    throw error;
+  }
+};
+
+// Add a function to delete spending entries
+export const deleteSpendingEntry = async (entryId) => {
+  try {
+    const response = await api.delete(`/spending/${entryId}`);
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to delete spending entry (ID: ${entryId}):`, error);
+    throw error;
+  }
+};
+
 export default api;
