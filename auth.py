@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
+from sqlalchemy.sql import func
 from database import SessionLocal
 from models import User
 from dotenv import load_dotenv
@@ -44,8 +45,10 @@ auth_router = APIRouter()
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     """
     Handles user login by generating access and refresh tokens.
+    Email is case-insensitive during the login process.
     """
-    user = db.query(User).filter(User.email == form_data.username).first()
+    normalized_email = form_data.username.strip().lower()  # Normalize email
+    user = db.query(User).filter(func.lower(User.email) == normalized_email).first()
     if not user or not verify_password(form_data.password, user.password):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
@@ -95,8 +98,10 @@ def get_password_hash(password: str) -> str:
 def authenticate_user(db: Session, email: str, password: str) -> User:
     """
     Authenticate a user by email and password.
+    Email is case-insensitive during authentication.
     """
-    user = db.query(User).filter(User.email == email).first()
+    normalized_email = email.strip().lower()  # Normalize email
+    user = db.query(User).filter(func.lower(User.email) == normalized_email).first()
     if not user or not verify_password(password, user.password):
         return None
     return user

@@ -79,10 +79,21 @@ days_up_to_today = today.day  # Days elapsed up to today
 # User Login
 @app.post("/auth/login", response_model=Token)
 def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = authenticate_user(db, form_data.username, form_data.password)
+    """
+    Login endpoint that handles user authentication.
+    Ensures email is case-insensitive during authentication.
+    """
+    # Normalize email to ensure case-insensitive matching
+    normalized_email = form_data.username.strip().lower()
+    user = db.query(User).filter(func.lower(User.email) == normalized_email).first()
+
+    # Authenticate user by verifying the password
     if not user:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    # Generate access token upon successful authentication
     token = create_access_token({"sub": str(user.id)})
+
     return {"access_token": token, "token_type": "bearer"}
 
 # User Logout
