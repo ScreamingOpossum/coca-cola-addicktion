@@ -56,7 +56,6 @@ class ConsumptionEntry(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    location_id = Column(Integer, ForeignKey("purchase_locations.id"), nullable=True)
     date = Column(Date, nullable=False, default=date.today)  # Default to today's date
     liters_consumed = Column(Float, nullable=False)
     notes = Column(String, nullable=True)  # Field for optional comments
@@ -80,7 +79,6 @@ class SpendingEntry(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    location_id = Column(Integer, ForeignKey("purchase_locations.id"), nullable=True)
     date = Column(Date, nullable=False)
     amount_spent = Column(Float, nullable=False)
     liters = Column(Float, nullable=False)
