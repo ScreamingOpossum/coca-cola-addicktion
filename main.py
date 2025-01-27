@@ -250,20 +250,21 @@ def get_dashboard_metrics(
                 or 0
         )
 
-        # Highest Consumption
-        highest_consumption_entry = (
-            db.query(ConsumptionEntry)
+        # Highest Consumption (Summing all values for the highest consumption day)
+        highest_consumption_data = (
+            db.query(
+                ConsumptionEntry.date,
+                func.sum(ConsumptionEntry.liters_consumed).label("total_liters")
+            )
             .filter(ConsumptionEntry.user_id == current_user.id)
-            .order_by(ConsumptionEntry.liters_consumed.desc())
+            .group_by(ConsumptionEntry.date)
+            .order_by(func.sum(ConsumptionEntry.liters_consumed).desc())
             .first()
         )
+
         highest_consumption = {
-            "liters": highest_consumption_entry.liters_consumed
-            if highest_consumption_entry
-            else 0,
-            "date": highest_consumption_entry.date.strftime("%Y-%m-%d")
-            if highest_consumption_entry
-            else "N/A",
+            "liters": highest_consumption_data.total_liters if highest_consumption_data else 0,
+            "date": highest_consumption_data.date.strftime("%Y-%m-%d") if highest_consumption_data else "N/A",
         }
 
         # Today's Spending
@@ -329,20 +330,21 @@ def get_dashboard_metrics(
                 or 0
         )
 
-        # Highest Spending
-        highest_spending_entry = (
-            db.query(SpendingEntry)
+        # Highest Spending (Summing all values for the highest spending day)
+        highest_spending_data = (
+            db.query(
+                SpendingEntry.date,
+                func.sum(SpendingEntry.amount_spent).label("total_spent")
+            )
             .filter(SpendingEntry.user_id == current_user.id)
-            .order_by(SpendingEntry.amount_spent.desc())
+            .group_by(SpendingEntry.date)
+            .order_by(func.sum(SpendingEntry.amount_spent).desc())
             .first()
         )
+
         highest_spending = {
-            "amount": highest_spending_entry.amount_spent
-            if highest_spending_entry
-            else 0,
-            "date": highest_spending_entry.date.strftime("%Y-%m-%d")
-            if highest_spending_entry
-            else "N/A",
+            "amount": highest_spending_data.total_spent if highest_spending_data else 0,
+            "date": highest_spending_data.date.strftime("%Y-%m-%d") if highest_spending_data else "N/A",
         }
 
         # Weekly Trends

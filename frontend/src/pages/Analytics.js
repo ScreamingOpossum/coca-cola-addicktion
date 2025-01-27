@@ -1,4 +1,4 @@
-// src/pages/Analytics.js
+// Analytics.js
 
 import React from "react";
 import {
@@ -25,7 +25,7 @@ import {
   LinearScale,
   BarElement,
   LineElement,
-  PointElement,  // <-- Added for line charts
+  PointElement,
   Title,
   Tooltip,
   Legend,
@@ -35,7 +35,7 @@ import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { useAnalyticsData } from "../hooks/useAnalyticsData";
 
-// Register necessary Chart.js components
+// Register all chart elements for lines & bars
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -49,10 +49,7 @@ ChartJS.register(
 
 const Analytics = () => {
   const {
-    // Loading state
     loading,
-
-    // Data from endpoints
     dailyTrends,
     weeklyOverview,
     monthlyTrends,
@@ -62,32 +59,27 @@ const Analytics = () => {
     milestones,
     topDays,
     averageDailyConsumption,
-
-    // Compare-months controls
     selectedPreset,
     setSelectedPreset,
     customRange,
     setCustomRange,
-
-    // Method to refresh
     fetchAnalyticsData,
   } = useAnalyticsData();
 
-  // 1) Daily Trends (Line)
+  // 1) DAILY TRENDS
   const dailyTrendsData = {
     labels: dailyTrends.map((item) => item.date),
     datasets: [
       {
         label: "Daily Consumption (L)",
         data: dailyTrends.map((item) => item.liters),
-        fill: false,
         borderColor: "rgba(75,192,192,1)",
         backgroundColor: "rgba(75,192,192,0.3)",
       },
     ],
   };
 
-  // 3) Weekly Overview (Bar)
+  // 3) WEEKLY OVERVIEW
   const weeklyOverviewData = {
     labels: weeklyOverview.map((d) => d.date),
     datasets: [
@@ -104,33 +96,32 @@ const Analytics = () => {
     ],
   };
 
-  // 4) Monthly Trends (Line)
+  // 4) MONTHLY TRENDS
   const monthlyTrendsData = {
     labels: monthlyTrends.map((d) => d.date),
     datasets: [
       {
         label: "Liters (This Month)",
         data: monthlyTrends.map((d) => d.liters),
-        fill: false,
         borderColor: "rgba(255,99,132,1)",
         backgroundColor: "rgba(255,99,132,0.3)",
       },
     ],
   };
 
-  // 6) Annual Overview (Bar)
+  // 6) ANNUAL OVERVIEW
   const annualOverviewData = {
     labels: annualOverview.map((m) => m.month),
     datasets: [
       {
         label: "Liters Consumed",
         data: annualOverview.map((m) => m.liters),
-        backgroundColor: "rgba(255, 159, 64, 0.6)",
+        backgroundColor: "rgba(255,159,64,0.6)",
       },
       {
         label: "Spending (Br)",
         data: annualOverview.map((m) => m.spending),
-        backgroundColor: "rgba(75, 192, 192, 0.6)",
+        backgroundColor: "rgba(75,192,192,0.6)",
       },
     ],
   };
@@ -162,9 +153,10 @@ const Analytics = () => {
             <CircularProgress />
           </Box>
         ) : (
+          // Each <Grid item> uses xs={12} to stack vertically
           <Grid container spacing={3} sx={{ mt: 3 }}>
-            {/* 1) Daily Trends */}
-            <Grid item xs={12} md={6}>
+            {/* 1) DAILY TRENDS */}
+            <Grid item xs={12}>
               <Card elevation={4}>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
@@ -185,13 +177,12 @@ const Analytics = () => {
             </Grid>
 
             {/* 2) Compare Selected Months */}
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12}>
               <Card elevation={4}>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
                     2) Compare Selected Months
                   </Typography>
-
                   <Grid container spacing={2} alignItems="center">
                     <Grid item>
                       <TextField
@@ -234,11 +225,9 @@ const Analytics = () => {
                         </Grid>
                       </>
                     )}
+
                     <Grid item>
-                      <Button
-                        variant="contained"
-                        onClick={fetchAnalyticsData}
-                      >
+                      <Button variant="contained" onClick={fetchAnalyticsData}>
                         Apply
                       </Button>
                     </Grid>
@@ -252,12 +241,12 @@ const Analytics = () => {
                           {
                             label: "Consumption (L)",
                             data: monthlyComparison.map((m) => m.consumption),
-                            backgroundColor: "rgba(54, 162, 235, 0.6)",
+                            backgroundColor: "rgba(54,162,235,0.6)",
                           },
                           {
                             label: "Spending (Br)",
                             data: monthlyComparison.map((m) => m.spending),
-                            backgroundColor: "rgba(153, 102, 255, 0.6)",
+                            backgroundColor: "rgba(153,102,255,0.6)",
                           },
                         ],
                       }}
@@ -270,7 +259,7 @@ const Analytics = () => {
             </Grid>
 
             {/* 3) Weekly Overview */}
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12}>
               <Card elevation={4}>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
@@ -291,7 +280,7 @@ const Analytics = () => {
             </Grid>
 
             {/* 4) Monthly Trends */}
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12}>
               <Card elevation={4}>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
@@ -312,7 +301,7 @@ const Analytics = () => {
             </Grid>
 
             {/* 5) Spending Percentage */}
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12}>
               <Card elevation={4}>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
@@ -331,7 +320,7 @@ const Analytics = () => {
             </Grid>
 
             {/* 6) Annual Overview */}
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12}>
               <Card elevation={4}>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
@@ -343,7 +332,10 @@ const Analytics = () => {
                     options={{
                       responsive: true,
                       plugins: {
-                        title: { display: true, text: "Current Year's Monthly Consumption & Spending" },
+                        title: {
+                          display: true,
+                          text: "Current Year's Monthly Consumption & Spending",
+                        },
                       },
                     }}
                   />
@@ -352,7 +344,7 @@ const Analytics = () => {
             </Grid>
 
             {/* 7) Milestones */}
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12}>
               <Card elevation={4}>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
@@ -377,7 +369,7 @@ const Analytics = () => {
             </Grid>
 
             {/* 8) Top Spending Days */}
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12}>
               <Card elevation={4}>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
@@ -406,7 +398,7 @@ const Analytics = () => {
             </Grid>
 
             {/* 9) Average Daily Consumption */}
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12}>
               <Card elevation={4}>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
