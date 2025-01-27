@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException, Request, Body
 from sqlalchemy.orm import Session
-from database import SessionLocal
+from database import SessionLocal, engine, Base
 from models import User, RoleEnum, ConsumptionEntry, SpendingEntry
 from schemas import (
     Token,
@@ -25,12 +25,14 @@ import logging
 from auth import auth_router
 from fastapi import Query
 from calendar import monthrange
+from routes import analytics
 
 # Initialize FastAPI app
 app = FastAPI()
 
-# Initialize router
+# Initialize Router
 app.include_router(auth_router)
+app.include_router(analytics.router, prefix="/analytics", tags=["Analytics"])
 
 # Enable CORS for frontend communication
 app.add_middleware(
@@ -51,7 +53,6 @@ logging.basicConfig(
     ],
 )
 logger = logging.getLogger(__name__)
-logger.info("Logging system initialized.")
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

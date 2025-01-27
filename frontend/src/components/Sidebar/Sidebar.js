@@ -14,10 +14,8 @@ import {
   FaGlassWhiskey,
   FaMoneyBillWave,
   FaUser,
-  FaQuestionCircle,
   FaSignOutAlt,
   FaChartLine,
-  FaCommentDots,
 } from "react-icons/fa";
 import { NavLink } from "react-router-dom";
 import { AuthContext } from "../../context/AuthContext";
@@ -84,20 +82,6 @@ const Sidebar = () => {
           </ListItem>
         </List>
         <Divider />
-        <List>
-          <ListItem component={NavLink} to="/help" button sx={{ color: "#ffffff" }}>
-            <ListItemIcon sx={{ color: "#ffffff" }}>
-              <FaQuestionCircle />
-            </ListItemIcon>
-            <ListItemText primary="Help & FAQ" />
-          </ListItem>
-          <ListItem component={NavLink} to="/feedback" button sx={{ color: "#ffffff" }}>
-            <ListItemIcon sx={{ color: "#ffffff" }}>
-              <FaCommentDots />
-            </ListItemIcon>
-            <ListItemText primary="Feedback" />
-          </ListItem>
-        </List>
       </Box>
       <Box sx={{ position: "absolute", bottom: 20, width: "100%", textAlign: "center" }}>
         <ListItem button onClick={handleLogout} sx={{ color: "#e63946" }}>

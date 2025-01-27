@@ -312,41 +312,44 @@ export default function Dashboard() {
                   >
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={weeklyTrends}>
-                        <CartesianGrid stroke="#e0e0e0" strokeDasharray="5 5" />
-                        <XAxis dataKey="name" />
-                        <YAxis
-                          yAxisId="left"
-                          label={{
-                            value: "Liters",
-                            angle: -90,
-                            position: "insideLeft",
-                          }}
-                        />
-                        <YAxis
-                          yAxisId="right"
-                          orientation="right"
-                          label={{
-                            value: "Br Spent",
-                            angle: -90,
-                            position: "insideRight",
-                          }}
-                        />
-                        <Tooltip />
-                        <Line
-                          yAxisId="left"
-                          type="monotone"
-                          dataKey="liters"
-                          stroke={theme.palette.primary.main}
-                          strokeWidth={2}
-                        />
-                        <Line
-                          yAxisId="right"
-                          type="monotone"
-                          dataKey="amount"
-                          stroke={theme.palette.secondary.main}
-                          strokeWidth={2}
-                        />
-                      </LineChart>
+              <CartesianGrid stroke="#e0e0e0" strokeDasharray="5 5" />
+              <XAxis dataKey="name" />
+              <YAxis
+                yAxisId="left"
+                label={{
+                  value: "Liters",
+                  angle: -90,
+                  position: "insideLeft",
+                }}
+              />
+              <YAxis
+                yAxisId="right"
+                orientation="right"
+                label={{
+                  value: "Br Spent",
+                  angle: -90,
+                  position: "insideRight",
+                }}
+              />
+              <Tooltip
+                formatter={(value) => value.toFixed(2)}
+                labelFormatter={(label) => `${label}`}
+              />
+              <Line
+                yAxisId="left"
+                type="monotone"
+                dataKey="liters"
+                stroke={theme.palette.primary.main}
+                strokeWidth={2}
+              />
+              <Line
+                yAxisId="right"
+                type="monotone"
+                dataKey="amount"
+                stroke={theme.palette.secondary.main}
+                strokeWidth={2}
+              />
+            </LineChart>
                     </ResponsiveContainer>
                   </Box>
                 </CardContent>

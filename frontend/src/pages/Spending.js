@@ -220,15 +220,15 @@ const Spending = () => {
               {month.month}
             </Typography>
             <Typography variant="subtitle1">
-              Total Spending: {month.total_spending || "N/A"} Br
-            </Typography>
-            <Typography variant="subtitle1">
-              Average Daily Spending: {month.average_daily_spending?.toFixed(2) || "N/A"} Br
-            </Typography>
-            <Typography variant="subtitle1">
-              Highest Spending: {month.highest_spending.amount || "N/A"} Br on{" "}
-              {month.highest_spending.date || "N/A"}
-            </Typography>
+  Total Spending: {month.total_spending?.toFixed(2) || "N/A"} Br
+</Typography>
+<Typography variant="subtitle1">
+  Average Daily Spending: {month.average_daily_spending?.toFixed(2) || "N/A"} Br
+</Typography>
+<Typography variant="subtitle1">
+  Highest Spending: {month.highest_spending.amount?.toFixed(2) || "N/A"} Br on{" "}
+  {month.highest_spending.date || "N/A"}
+</Typography>
             <TableContainer component={Paper} sx={{ mt: 2 }}>
               <Table>
                 <TableHead>

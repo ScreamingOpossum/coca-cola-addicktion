@@ -9,10 +9,8 @@ import ForgotPassword from "./pages/ForgotPassword";
 import Sidebar from "./components/Sidebar/Sidebar";
 import Consumption from "./pages/Consumption";
 import Spending from "./pages/Spending";
-import Analytics from "./pages/Analytics";
+import Analytics from './pages/Analytics';
 import Profile from "./pages/Profile";
-import Help from "./pages/Help";
-import Feedback from "./pages/Feedback";
 
 // Debug Sidebar Import
 console.log("Sidebar Loaded:", typeof Sidebar === "function");
@@ -30,8 +28,6 @@ const routes = [
   { path: "/spending", element: <Spending /> },
   { path: "/analytics", element: <Analytics /> },
   { path: "/profile", element: <Profile /> },
-  { path: "/help", element: <Help /> },
-  { path: "/feedback", element: <Feedback /> },
 ];
 
 function App() {

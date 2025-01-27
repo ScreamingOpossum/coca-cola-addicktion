@@ -16,10 +16,7 @@ export const setAuthToken = (token) => {
 // Handle responses and refresh token if needed
 export const setupInterceptors = (refreshAccessToken, clearAuthData, navigate) => {
   api.interceptors.request.use(
-    (config) => {
-      // Authorization header is already handled via setAuthToken
-      return config;
-    },
+    (config) => config,
     (error) => {
       console.error("Request error:", error);
       return Promise.reject(error);
@@ -32,29 +29,133 @@ export const setupInterceptors = (refreshAccessToken, clearAuthData, navigate) =
       if (error.response && error.response.status === 401) {
         const originalRequest = error.config;
 
-        // Check if error is due to token expiration
         if (error.response.data?.detail === "Token expired") {
           try {
-            // Attempt to refresh token
             await refreshAccessToken();
-            return api.request(originalRequest); // Retry the original request
+            return api.request(originalRequest);
           } catch (err) {
             console.error("Token refresh failed. Logging out...");
-            clearAuthData(); // Clear user session
-            navigate("/login"); // Redirect to login
+            clearAuthData();
+            navigate("/login");
             return Promise.reject(err);
           }
         }
       } else {
         console.error("API response error:", error);
       }
-
       return Promise.reject(error);
     }
   );
 };
 
-// Add a function to edit consumption entries
+// ------------------------------
+// Analytics API Calls
+// ------------------------------
+
+// Fetch daily trends for consumption
+export const getDailyTrends = async (userId) => {
+  try {
+    const response = await api.get("/analytics/daily-trends", { params: { user_id: userId } });
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch daily trends:", error);
+    throw error;
+  }
+};
+
+// Compare selected months for consumption and spending
+export const compareMonths = async (userId, months) => {
+  try {
+    const response = await api.get("/analytics/compare-months", { params: { user_id: userId, months } });
+    return response.data;
+  } catch (error) {
+    console.error("Failed to compare months:", error);
+    throw error;
+  }
+};
+
+// Get weekly overview (consumption & spending)
+export const getWeeklyOverview = async (userId) => {
+  try {
+    const response = await api.get("/analytics/weekly-overview", { params: { user_id: userId } });
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch weekly overview:", error);
+    throw error;
+  }
+};
+
+// Fetch daily consumption for a selected month
+export const getMonthlyTrends = async (userId, month) => {
+  try {
+    const response = await api.get("/analytics/monthly-trends", { params: { user_id: userId, month } });
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch monthly trends:", error);
+    throw error;
+  }
+};
+
+// Get annual consumption & spending overview
+export const getAnnualOverview = async (userId, year) => {
+  try {
+    const response = await api.get("/analytics/annual-overview", { params: { user_id: userId, year } });
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch annual overview:", error);
+    throw error;
+  }
+};
+
+// Fetch spending distribution by store or city
+export const getSpendingByCategory = async (userId, groupBy) => {
+  try {
+    const response = await api.get("/analytics/spending-category", { params: { user_id: userId, group_by: groupBy } });
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch spending by category:", error);
+    throw error;
+  }
+};
+
+// Fetch top 5 consumption or spending days
+export const getTopDays = async (userId, type) => {
+  try {
+    const response = await api.get("/analytics/top-days", { params: { user_id: userId, type } });
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch top days:", error);
+    throw error;
+  }
+};
+
+// Fetch user milestones (e.g., "First 100 Liters")
+export const getMilestones = async (userId) => {
+  try {
+    const response = await api.get("/analytics/milestones", { params: { user_id: userId } });
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch milestones:", error);
+    throw error;
+  }
+};
+
+// Fetch monthly spending as a percentage of user income
+export const getSpendingPercentage = async (userId) => {
+  try {
+    const response = await api.get("/analytics/spending-percentage", { params: { user_id: userId } });
+    return response.data;
+  } catch (error) {
+    console.error("Failed to fetch spending percentage:", error);
+    throw error;
+  }
+};
+
+// ------------------------------
+// Consumption & Spending Management
+// ------------------------------
+
+// Edit consumption entry
 export const editConsumptionEntry = async (entryId, updatedData) => {
   try {
     const response = await api.put(`/consumption/${entryId}`, updatedData);
@@ -65,7 +166,7 @@ export const editConsumptionEntry = async (entryId, updatedData) => {
   }
 };
 
-// Add a function to delete consumption entries
+// Delete consumption entry
 export const deleteConsumptionEntry = async (entryId) => {
   try {
     const response = await api.delete(`/consumption/${entryId}`);
@@ -76,7 +177,7 @@ export const deleteConsumptionEntry = async (entryId) => {
   }
 };
 
-// Add a function to edit spending entries
+// Edit spending entry
 export const editSpendingEntry = async (entryId, updatedData) => {
   try {
     const response = await api.put(`/spending/${entryId}`, updatedData);
@@ -87,7 +188,7 @@ export const editSpendingEntry = async (entryId, updatedData) => {
   }
 };
 
-// Add a function to delete spending entries
+// Delete spending entry
 export const deleteSpendingEntry = async (entryId) => {
   try {
     const response = await api.delete(`/spending/${entryId}`);
@@ -98,7 +199,7 @@ export const deleteSpendingEntry = async (entryId) => {
   }
 };
 
-//User deletion
+// User deletion
 export const deleteUser = async () => {
   try {
     const response = await api.delete("/user");
